@@ -48,12 +48,7 @@ class EphemerisUnavailableError(RuntimeError):
 
 
 def _dms(degrees_within_sign: float) -> DMS:
-    """Convert a within-sign angle to display-safe DMS.
-
-    Values are quantized to centiseconds for display only. Raw longitudes remain
-    unrounded elsewhere. Clamping prevents an impossible 30°00′00″ display
-    inside the current sign when a value lies just below the next sign boundary.
-    """
+    """Convert a within-sign angle to display-safe DMS."""
 
     value = degrees_within_sign % 30.0
     centiseconds = int(round(value * 3600.0 * 100.0))
@@ -252,23 +247,23 @@ def _solar_event_for_local_date(
         swe.FLG_SWIEPH,
     )
 
-    # Swiss Ephemeris returns -2 when the requested rise/set does not occur.
     if result == -2:
         return None
 
     return _jd_to_utc_datetime(event_times[0]).astimezone(tz)
 
 
-def _build_placidus_cusps(
+def _build_house_cusps(
     jd_ut: float,
     latitude: float,
     longitude: float,
+    house_system: bytes,
 ) -> list[HouseCusp]:
     raw_cusps, _ = swe.houses_ex(
         jd_ut,
         latitude,
         longitude,
-        b"P",
+        house_system,
         swe.FLG_SIDEREAL,
     )
 
@@ -387,10 +382,14 @@ def calculate_astronomy(data: BirthData) -> dict:
             label="Midheaven",
         )
 
-        placidus_cusps = _build_placidus_cusps(
-            jd_ut,
-            data.latitude,
-            data.longitude,
+        placidus_cusps = _build_house_cusps(
+            jd_ut, data.latitude, data.longitude, b"P"
+        )
+        porphyry_madhyas = _build_house_cusps(
+            jd_ut, data.latitude, data.longitude, b"O"
+        )
+        sripati_boundaries = _build_house_cusps(
+            jd_ut, data.latitude, data.longitude, b"S"
         )
         whole_sign_houses = _build_whole_sign_houses(ascendant, planets)
 
@@ -421,6 +420,8 @@ def calculate_astronomy(data: BirthData) -> dict:
             "planets": planets,
             "whole_sign_houses": whole_sign_houses,
             "placidus_cusps": placidus_cusps,
+            "porphyry_madhyas": porphyry_madhyas,
+            "sripati_boundaries": sripati_boundaries,
             "sunrise_local": sunrise_local,
             "sunset_local": sunset_local,
         }

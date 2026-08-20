@@ -2,77 +2,86 @@
 
 ## Goal
 
-AstAi is a reusable Jyotisha computation, verification and interpretation platform. The central rule is that deterministic astronomical and astrological calculations are separated from probabilistic language-model interpretation.
+AstAi is a reusable Jyotisha computation, verification and interpretation platform. Deterministic astronomical and astrological calculations are separated from probabilistic language-model interpretation.
 
 ## Build order
 
 ### Layer 0 — Input and provenance
 
-Birth date, time, coordinates, IANA timezone, ayanamsa, node model and methodology choices are explicit inputs. Every derived value must be traceable to them. Birth-time uncertainty is stored when supplied rather than converted into an invented confidence score.
+Birth date, time, coordinates, IANA timezone, ayanamsa, node model and methodology choices are explicit inputs. Birth-time uncertainty is stored when supplied rather than converted into an invented confidence score.
 
 ### Layer 1 — Deterministic calculation core
 
-Swiss Ephemeris supplies the astronomical basis. AstAi derives sidereal zodiac mapping, Nakshatra/Pada, D1 Whole Sign houses, separate sidereal Placidus cusps, the classical Shodashavarga set and Vimshottari Mahadasha/Antardasha.
+Implemented through v0.5:
 
-Later deterministic modules include Bhava/Chalit, deeper Dashas, strengths, KP subdivisions, Jaimini, Arudha and Upagrahas.
+- Swiss Ephemeris astronomical basis
+- Lahiri sidereal zodiac and Nakshatra/Pada
+- D1 Whole Sign
+- Sripati Bhava/Chalit as a separate Parashari framework
+- Lahiri sidereal Placidus cusps as a separate future-KP framework
+- full classical Shodashavarga
+- Panchanga core
+- Vimshottari MD/AD/PD plus five-level birth timing path
+
+Later deterministic modules include Ashtakavarga, Shadbala/Bhava Bala, KP subdivisions/significators, Jaimini, Arudha and Upagrahas.
 
 This layer is the source of truth for computed chart data.
 
 ### Layer 2 — Verification and audit
 
-Golden-reference fixtures compare AstAi results with trusted reference software or independently verified data. Calculation disagreements are surfaced rather than hidden.
+Golden fixtures and mathematical invariants are separated by domain:
 
-Astronomy compatibility and high-varga formula compatibility are tested separately because very small source-longitude differences can cross narrow divisional boundaries.
+- astronomy / ephemeris
+- civil time
+- house methodology
+- varga transformations
+- dasha sequencing
+
+Small source-longitude differences are not confused with formula failures.
 
 ### Layer 3 — Knowledge layer
 
-Books, rule catalogues and carefully curated PDFs can be indexed for retrieval. They answer questions such as: "Which classical or KP rule applies to this already-calculated placement?"
-
-They do not replace astronomical calculation.
+Books, rule catalogues and curated PDFs can later be indexed for retrieval. They answer which interpretive rule applies to already-calculated chart data; they do not replace calculation.
 
 ### Layer 4 — LLM orchestration
 
-An LLM receives structured chart data and retrieved rules, then writes explanations, comparisons and synthesis. It may call deterministic AstAi modules as tools. It must never invent missing planetary degrees, cusps, subdivisions or Dasha boundaries.
+An LLM receives structured chart data and retrieved rules, then explains and synthesizes. It must never invent missing planetary degrees, cusps, Vargas, house assignments or dasha boundaries.
 
 ### Layer 5 — Product interfaces
 
-FastAPI exposes stable machine-readable endpoints. Streamlit is the current development visualizer. A dedicated web/mobile client can replace Streamlit later without changing the calculation core.
+FastAPI exposes machine-readable endpoints. Streamlit remains the development visualizer. A dedicated TypeScript/web/mobile client can replace it later without changing the calculation core.
+
+## House-framework rule
+
+AstAi intentionally preserves three different structures:
+
+```text
+D1 Whole Sign
+    !=
+Sripati Bhava / Chalit
+    !=
+Placidus cusp framework (future KP)
+```
+
+Bhava Chalit never changes a planet's zodiac sign. It only derives its Bhava house.
 
 ## Why not microservices yet?
 
-The first production shape is a modular monolith: one Python codebase with clear internal module boundaries. This is easier to test and change while calculation conventions are still being finalized.
-
-Split a module into a separate service only when there is an observed reason, such as independent scaling, separate security boundaries, different deployment cadence or a measured performance bottleneck.
-
-Redis, an API gateway, a graph database and vector database are possible later additions, not foundation requirements.
-
-## Role of PDFs
-
-There are two useful PDF categories.
-
-### Reference/teaching PDFs
-
-Texts about Parashari, KP, Jaimini, Dashas and related traditions are candidates for a future RAG knowledge base. Each extracted rule should preserve source, edition/page or section, school, conditions, exceptions and methodology notes.
-
-### Generated birth-chart PDFs
-
-A trusted astrology-software PDF can be useful as a validation fixture or imported external chart record. It should be labelled `IMPORTED` or `REFERENCE`, not silently treated as a computed AstAi result.
-
-A PDF is not a substitute for the calculation engine because it is a presentation of someone else's calculations. Parsing it can reproduce those displayed values, but it does not make the underlying method independently auditable.
+The production shape remains a modular monolith while calculation conventions are being frozen and validated. Services, Redis, graph databases and vector databases are later scaling choices, not prerequisites for mathematical correctness.
 
 ## Current module map
 
 ```text
 src/astai/
   engine/
-    astronomy.py        # implemented: ephemeris, time normalization, Lagna, cusps
-    vargas.py           # implemented: full classical Shodashavarga + named compatibility profile
-    dasha.py            # implemented: Vimshottari MD/AD; deeper levels next
-    panchanga.py        # implemented core Panchanga + solar events
-    calculator.py       # canonical chart assembly + audit metadata
-    houses.py           # next: explicit Bhava/Chalit convention
-    strengths.py        # later: Shadbala/Bhava Bala/Ashtakavarga
-    kp.py               # later: star/sub/sub-sub and significators
+    astronomy.py        # ephemeris, time normalization, Lagna, house geometry
+    houses.py           # Sripati Bhava/Chalit
+    vargas.py           # full classical Shodashavarga
+    dasha.py            # Vimshottari MD/AD/PD + deep birth path
+    panchanga.py        # Panchanga + solar events
+    calculator.py       # canonical chart assembly + audit
+    strengths.py        # next: Ashtakavarga/Shadbala/Bhava Bala
+    kp.py               # later: star/sub/sub-sub + significators
     jaimini.py          # later
     arudha.py           # later
     upagraha.py         # later
@@ -86,9 +95,8 @@ streamlit_app.py        # development visualizer
 
 ## Recommended next milestones
 
-1. Add Vimshottari Pratyantar and deeper timing levels with boundary tests.
-2. Freeze and implement the Parashari Bhava/Chalit convention separately from KP Placidus cusps.
-3. Add Ashtakavarga and then Shadbala/Bhava Bala with independent fixtures.
-4. Build the KP deterministic engine: cusps, star lord, sub lord, sub-sub lord and significators.
-5. Add Jaimini, Arudha and Upagraha modules with explicit methodology identifiers.
-6. Only after the deterministic and audit layers are stable, add document ingestion/RAG and LLM tool calling.
+1. Ashtakavarga with independent fixtures.
+2. Shadbala and Bhava Bala.
+3. KP deterministic engine: cusps, star lord, sub lord, sub-sub lord and significators.
+4. Jaimini, Arudha and Upagraha modules with explicit methodology identifiers.
+5. Only after deterministic/audit layers stabilize: document ingestion/RAG and LLM tool calling.

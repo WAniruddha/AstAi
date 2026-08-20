@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from astai import __version__
 from astai.api import app
 from astai.engine import calculate_chart
 from astai.engine.astronomy import EphemerisUnavailableError, zodiac_point
@@ -114,7 +115,7 @@ def test_api_health() -> None:
     response = TestClient(app).get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-    assert response.json()["version"] == "0.4.0"
+    assert response.json()["version"] == __version__
 
 
 def test_dst_ambiguous_time_requires_explicit_fold() -> None:
