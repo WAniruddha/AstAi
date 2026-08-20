@@ -5,7 +5,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 EphemerisPolicy = Literal["strict_swiss", "allow_moshier"]
 NodeModel = Literal["mean", "true"]
 AuditStatus = Literal[
@@ -28,6 +27,7 @@ class BirthData(BaseModel):
     time_of_birth: time
     latitude: float = Field(ge=-90.0, le=90.0)
     longitude: float = Field(ge=-180.0, le=180.0)
+    elevation_m: float = Field(default=0.0, ge=-500.0, le=9000.0)
     timezone: str = Field(description="IANA timezone, e.g. Asia/Kolkata")
     timezone_fold: Literal[0, 1] | None = Field(
         default=None,
@@ -109,7 +109,17 @@ class VargaChart(BaseModel):
 
 
 class Panchanga(BaseModel):
-    weekday: str
+    weekday: str = Field(
+        description=(
+            "Hindu weekday, using local sunrise as the day boundary when "
+            "sunrise is available."
+        )
+    )
+    civil_weekday: str
+    sunrise_local: datetime | None = None
+    sunset_local: datetime | None = None
+    day_duration_seconds: float | None = None
+    birth_before_sunrise: bool | None = None
     tithi_number: int
     tithi_name: str
     paksha: Literal["Shukla", "Krishna"]
@@ -148,6 +158,7 @@ class VimshottariDasha(BaseModel):
 
 
 class CalculationMetadata(BaseModel):
+    calculation_fingerprint: str
     julian_day_ut: float
     utc_datetime: str
     local_datetime: str
@@ -162,7 +173,9 @@ class CalculationMetadata(BaseModel):
     zodiac: str = "sidereal"
     parashari_house_system: str = "whole_sign"
     secondary_cusp_system: str = "placidus"
-    coordinate_frame: str = "geocentric ecliptic of date"
+    coordinate_frame: str = "apparent geocentric ecliptic of date"
+    civil_time_source: str = "IANA tzdata"
+    calendar: str = "proleptic_gregorian"
 
 
 class AuditItem(BaseModel):

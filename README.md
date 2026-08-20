@@ -2,28 +2,31 @@
 
 AstAi is being built as a **deterministic, auditable Jyotisha calculation engine first**, with LLM/RAG interpretation layered on top later.
 
-## Calculator v0.2
+## Calculator v0.3
 
-Implemented now:
+Implemented and regression-tested now:
 
 - Swiss Ephemeris integration with Lahiri sidereal mode
 - actual ephemeris-backend detection
 - strict mode that refuses silent Moshier fallback
-- historical IANA timezone handling with DST ambiguity checks
+- historical IANA timezone handling with DST ambiguity/gap checks
 - Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn
 - Mean or True Rahu/Ketu
 - optional Uranus, Neptune, Pluto
-- exact Ascendant and Midheaven
+- precise Ascendant and Midheaven
 - D1 Whole Sign houses
 - separate Lahiri sidereal Placidus cusps
 - Nakshatra, Pada and Nakshatra Lord
 - D9 Navamsa
 - D10 Dasamsa
-- basic Panchanga: Vara, Tithi, Paksha, Karana, Yoga
+- Panchanga: sunrise-aware Vara, Tithi, Paksha, Karana, Yoga, sunrise and sunset
 - Vimshottari Mahadasha + Antardasha and birth balance
+- deterministic calculation fingerprint for audit/reproducibility
 - FastAPI endpoint
 - Streamlit calculation lab
-- external-reference validation tests
+- two independent AstroSage golden-reference reports
+- official Swiss Ephemeris Lahiri ayanamsa anchor test
+- boundary/invariant tests for zodiac mapping, DMS, DST, nodes and dasha ordering
 
 ## Important ephemeris requirement
 
@@ -70,7 +73,7 @@ pytest -q
 
 See [`docs/VALIDATION.md`](docs/VALIDATION.md).
 
-The first external golden fixture is a public AstroSage sample report. AstAi distinguishes external-software compatibility from strict astronomical conformance; it does not treat any astrology website as the source of astronomical truth.
+AstAi treats external astrology software as **compatibility references**, not as astronomical truth. Exact astronomical calculations are anchored to Swiss Ephemeris conventions; vendor comparisons check that the same settings produce the same categorical chart and closely compatible displayed longitudes.
 
 ## Architecture principle
 

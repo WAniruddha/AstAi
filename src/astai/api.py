@@ -1,19 +1,27 @@
 from fastapi import FastAPI, HTTPException
 
+from astai import __version__
 from astai.engine import calculate_chart
 from astai.engine.astronomy import EphemerisUnavailableError
 from astai.models import BirthData, ChartResponse
 
 app = FastAPI(
     title="AstAi Calculator API",
-    version="0.2.0",
-    description="Deterministic Jyotisha calculation API. Interpretation and LLM layers remain separate.",
+    version=__version__,
+    description=(
+        "Deterministic Jyotisha calculation API. "
+        "Interpretation and LLM layers remain separate."
+    ),
 )
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "service": "astai-calculator", "version": "0.2.0"}
+    return {
+        "status": "ok",
+        "service": "astai-calculator",
+        "version": __version__,
+    }
 
 
 @app.post("/v1/chart/calculate", response_model=ChartResponse)
