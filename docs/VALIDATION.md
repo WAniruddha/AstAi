@@ -1,99 +1,111 @@
 # AstAi Calculator Validation Standard
 
-AstAi separates **astronomical/scientific validation** from **astrological interpretation**.
+AstAi separates **astronomical/scientific validation**, **deterministic Jyotisha formula validation**, **cross-vendor compatibility**, and **astrological interpretation**.
 
-Astronomy and deterministic mathematics can be tested scientifically for reproducibility and numerical agreement. Predictive astrological claims belong to a separate interpretation layer and are not described as scientifically validated by this calculator.
+Astronomy and deterministic mathematics can be tested for reproducibility and numerical agreement. Predictive astrological claims belong to a later interpretation layer and are not described as scientifically validated by this calculator.
 
-## Validation tiers
+## Validation axes
 
-### Tier 1: input-time correctness
+### 1. Input and civil-time correctness
 
 - IANA historical timezone conversion is mandatory.
 - DST-nonexistent local times are rejected.
 - DST-ambiguous local times require explicit `timezone_fold`.
-- Coordinates are authoritative; place names are display metadata only.
-- Latitude/longitude use north/east positive convention.
-- The current calendar contract is proleptic Gregorian.
+- Coordinates are authoritative; place names are metadata.
+- Current calendar contract: proleptic Gregorian.
 
-### Tier 2: ephemeris integrity
+### 2. Ephemeris integrity
 
 Production mode uses `ephemeris_policy="strict_swiss"`.
 
-AstAi inspects Swiss Ephemeris return flags. If the runtime silently falls back to the built-in Moshier ephemeris, strict mode fails rather than pretending Swiss/JPL files were used.
+AstAi inspects Swiss Ephemeris return flags. If `pyswisseph` falls back to Moshier, strict mode fails rather than claiming a Swiss/JPL file backend.
 
-Set `ASTAI_EPHE_PATH` to a verified Swiss Ephemeris data directory for strict production calculations.
+Set `ASTAI_EPHE_PATH` to verified Swiss Ephemeris data files for production.
 
-Development and cross-vendor tests may use `ephemeris_policy="allow_moshier"`; the actual backend is always recorded in metadata and audit output.
+### 3. Scientific/convention anchors
 
-### Tier 3: scientific/convention anchors
+Tests include:
 
-Tests include an official Swiss Ephemeris Lahiri ayanamsa anchor at J2000 (JD 2451545.0 TT): `23°51′25.5324″`, plus the invariant that tropical longitude minus recorded Lahiri ayanamsa reproduces each physical body's sidereal longitude to floating-point precision.
+- Swiss Ephemeris Lahiri ayanamsa J2000 anchor (`23°51′25.5324″`).
+- Tropical longitude minus recorded Lahiri ayanamsa reproduces physical-body sidereal longitude to floating-point precision.
+- sign/Nakshatra/Pada boundary neighborhoods.
+- exact Rahu/Ketu opposition.
+- historical DST gap/ambiguity behavior.
+- sunrise/sunset and sunrise-based Hindu weekday behavior.
+- deterministic calculation fingerprinting.
 
-Swiss Ephemeris reference: https://www.astro.com/swisseph-download/doc/swisseph.pdf
+### 4. Shodashavarga formula validation
 
-### Tier 4: deterministic Jyotisha invariants
+v0.4 freezes the classical set:
 
-Tests cover:
+`D1, D2, D3, D4, D7, D9, D10, D12, D16, D20, D24, D27, D30, D40, D45, D60`.
 
-- all sign/Nakshatra/Pada boundary neighborhoods
-- DMS display rollover safety
-- exact 180° Rahu/Ketu opposition
-- whole-sign D1 houses
-- sidereal Placidus cusps as a separate framework
-- D9 Navamsa mapping
-- D10 Dasamsa mapping
-- sunrise-aware Hindu weekday
-- Tithi/Paksha/Karana/Yoga from exact Sun/Moon longitudes
-- Vimshottari birth balance and ordered MD/AD generation
-- deterministic calculation fingerprints
+The default methodology is `parashara_traditional_v1`. D30 uses traditional unequal segments. D60 uses the explicitly named traditional "from sign" method; other D60 variants are not silently merged into it.
 
-### Tier 5: external compatibility fixtures
+Formula tests use exact source longitudes and explicit half-open amsa boundaries `[start, end)`.
 
-External vendor reports are compatibility references, not astronomical truth.
+Each varga output stores its methodology, amsa index, source amsa bounds and distance to the nearest exact amsa boundary. D60 always carries a sensitivity warning.
 
-Current golden fixtures:
+See [`VARGA_METHODS.md`](VARGA_METHODS.md).
 
-1. AstroSage Career Report sample: 11 April 1979, 18:23:24, Agra.
-2. AstroSage Brihat Horoscope sample: 23 August 1979, 23:53:18, Delhi.
+### 5. External vendor astronomy compatibility
 
-The reports publish birth data, Lahiri ayanamsa, Ascendant, planetary positions, Panchanga, sunrise/sunset and Vimshottari balance. Fixtures preserve the source URL and page numbers.
+Current public fixtures include AstroSage reports for:
 
-Cross-vendor standards:
+1. 11 April 1979, Agra.
+2. 23 August 1979, Delhi.
+3. 23 August 1978, Delhi.
 
-1. **Categorical equality:** sign, Nakshatra and Pada must agree exactly.
-2. **Longitude compatibility:** currently within `0.05°` (3 arcminutes) for these historical AstroSage reports.
-3. **Solar events:** sunrise/sunset within 60 seconds for the selected fixtures.
-4. **Ayanamsa display:** within 5 arcseconds of the vendor's displayed rounded value.
-5. **Dasha balance:** exact where the report and convention align, with an explicitly stored small day tolerance where legacy vendor rounding differs.
+Vendor reports remain compatibility references, not astronomical truth.
 
-The relatively loose vendor longitude tolerance is **not** the scientific ephemeris tolerance. It exists because legacy astrology software can use different ephemeris generations, rounding and internal conventions. AstAi must not deliberately degrade Swiss Ephemeris precision merely to reproduce an older vendor's printed number.
+Typical checks:
 
-## Current status: v0.3
+- exact sign/Nakshatra/Pada equality,
+- displayed longitude within an explicitly stored cross-vendor tolerance,
+- sunrise/sunset within an explicitly stored tolerance,
+- displayed ayanamsa within a small rounding tolerance,
+- Vimshottari balance under the selected date convention.
 
-Implemented and tested:
+### 6. Varga mapping compatibility is tested separately from astronomy
 
-- Sun through Saturn
-- Mean or True Rahu/Ketu
-- optional Uranus/Neptune/Pluto
-- precise Lahiri Ascendant and Midheaven
-- D1 Whole Sign
-- Lahiri sidereal Placidus cusps
-- Nakshatra/Pada/Star Lord
-- D9
-- D10
-- Panchanga with sunrise/sunset and sunrise-based Vara
-- Vimshottari Mahadasha and Antardasha
-- backend audit metadata
-- calculation fingerprint
-- two independent external golden fixtures
+This separation is essential.
+
+For example, in the 1978 AstroSage report, the printed Mars longitude is about 98 arcseconds away from the development ephemeris result. That difference is still within the broad historical vendor longitude tolerance, but it crosses a D45 amsa boundary because D45 segments are only 40 arcminutes wide.
+
+Therefore AstAi does **not** say "D45 formula failed" merely because two ephemerides place a body on opposite sides of a high-varga boundary.
+
+Instead:
+
+- astronomy compatibility compares the two source longitudes;
+- varga-formula compatibility feeds the vendor's own printed source longitude into the AstAi varga transform and compares the resulting vendor table.
+
+This prevents both false failures and fake agreement.
+
+### 7. AstroSage D7 compatibility profile
+
+Across two public AstroSage Brihat tables (1978 and 1979), the otherwise unexplained D7 differences are reproduced consistently when the within-sign degree is truncated to a whole degree **only for selecting the D7 amsa**.
+
+AstAi therefore provides `astrosage_reference_compat_v1` for explicit compatibility testing. The default remains exact `parashara_traditional` using 30/7 degree divisions. The compatibility behavior is labeled and audited; it is never silently substituted for the classical method.
+
+## Current status: v0.4
+
+Implemented and regression-tested:
+
+- astronomical core and audit metadata,
+- D1 Whole Sign and separate Placidus cusps,
+- Nakshatra/Pada/Star Lord,
+- full classical Shodashavarga,
+- Panchanga with sunrise/sunset and sunrise-based Vara,
+- Vimshottari Mahadasha and Antardasha,
+- three AstroSage astronomy fixtures,
+- two full AstroSage Shodashavarga table fixtures,
+- exact classical and explicit vendor-compatibility varga profiles.
 
 Not yet certified:
 
-- full Shodashvarga
-- Bhava Chalit convention
-- Shadbala / Bhava Bala
-- Ashtakavarga
-- KP subdivisions and significator logic
-- Upagrahas
-
-Those modules are added only after their formula convention is frozen and their own reference fixtures exist.
+- Bhava Chalit convention,
+- Vimshottari Pratyantar and deeper levels,
+- Shadbala / Bhava Bala,
+- Ashtakavarga,
+- KP subdivisions and significator logic,
+- Upagrahas.

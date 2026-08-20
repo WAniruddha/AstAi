@@ -1,0 +1,307 @@
+{
+  "provenance": {
+    "vendor": "AstroSage",
+    "document": "Brihat Horoscope sample (1978)",
+    "url": "https://www.astrosage.com/pdf/poojasharmaE.pdf",
+    "pages": [
+      1,
+      4,
+      112
+    ]
+  },
+  "birth_data": {
+    "date": "1978-08-23",
+    "time": "23:53:18",
+    "place": "Delhi",
+    "latitude": 28.6666666667,
+    "longitude": 77.2166666667,
+    "timezone": "Asia/Kolkata",
+    "ayanamsa": "Lahiri",
+    "node_model": "Mean",
+    "varga_profile": "astrosage_reference_compat_v1"
+  },
+  "reference": {
+    "ascendant": {
+      "longitude": 45.5038888889,
+      "sign": "Taurus",
+      "nakshatra": "Rohini",
+      "pada": 2
+    },
+    "planets": {
+      "Sun": {
+        "longitude": 126.7083333333,
+        "sign": "Leo",
+        "nakshatra": "Magha",
+        "pada": 3
+      },
+      "Moon": {
+        "longitude": 16.3861111111,
+        "sign": "Aries",
+        "nakshatra": "Bharani",
+        "pada": 1
+      },
+      "Mars": {
+        "longitude": 168.68,
+        "sign": "Virgo",
+        "nakshatra": "Hasta",
+        "pada": 3
+      },
+      "Mercury": {
+        "longitude": 118.2786111111,
+        "sign": "Cancer",
+        "nakshatra": "Ashlesha",
+        "pada": 4
+      },
+      "Jupiter": {
+        "longitude": 93.9111111111,
+        "sign": "Cancer",
+        "nakshatra": "Pushya",
+        "pada": 1
+      },
+      "Venus": {
+        "longitude": 172.6783333333,
+        "sign": "Virgo",
+        "nakshatra": "Hasta",
+        "pada": 4
+      },
+      "Saturn": {
+        "longitude": 129.9658333333,
+        "sign": "Leo",
+        "nakshatra": "Magha",
+        "pada": 3
+      },
+      "Rahu": {
+        "longitude": 154.5611111111,
+        "sign": "Virgo",
+        "nakshatra": "Uttara Phalguni",
+        "pada": 3
+      },
+      "Ketu": {
+        "longitude": 334.5611111111,
+        "sign": "Pisces",
+        "nakshatra": "Uttara Bhadrapada",
+        "pada": 1
+      }
+    },
+    "panchanga": {
+      "weekday": "Wednesday",
+      "tithi": "Shashthi",
+      "paksha": "Krishna",
+      "karana": "Vanija",
+      "yoga": "Vriddhi",
+      "sunrise": "05:54:14",
+      "sunset": "18:53:28",
+      "solar_event_tolerance_seconds": 60
+    },
+    "dasha_balance": {
+      "lord": "Venus",
+      "years": 15,
+      "months": 5,
+      "days": 1,
+      "day_tolerance": 3
+    },
+    "ayanamsa": {
+      "degrees": 23.5583333333,
+      "tolerance_arcseconds": 5
+    },
+    "shodashavarga": {
+      "profile": "astrosage_reference_compat_v1",
+      "signs_1_based": {
+        "D1": {
+          "Ascendant": 2,
+          "Sun": 5,
+          "Moon": 1,
+          "Mars": 6,
+          "Mercury": 4,
+          "Jupiter": 4,
+          "Venus": 6,
+          "Saturn": 5,
+          "Rahu": 6,
+          "Ketu": 12
+        },
+        "D2": {
+          "Ascendant": 5,
+          "Sun": 5,
+          "Moon": 4,
+          "Mars": 5,
+          "Mercury": 5,
+          "Jupiter": 4,
+          "Venus": 5,
+          "Saturn": 5,
+          "Rahu": 4,
+          "Ketu": 4
+        },
+        "D3": {
+          "Ascendant": 6,
+          "Sun": 5,
+          "Moon": 5,
+          "Mars": 10,
+          "Mercury": 12,
+          "Jupiter": 4,
+          "Venus": 2,
+          "Saturn": 5,
+          "Rahu": 6,
+          "Ketu": 12
+        },
+        "D4": {
+          "Ascendant": 8,
+          "Sun": 5,
+          "Moon": 7,
+          "Mars": 12,
+          "Mercury": 1,
+          "Jupiter": 4,
+          "Venus": 3,
+          "Saturn": 8,
+          "Rahu": 6,
+          "Ketu": 12
+        },
+        "D7": {
+          "Ascendant": 11,
+          "Sun": 6,
+          "Moon": 4,
+          "Mars": 4,
+          "Mercury": 4,
+          "Jupiter": 10,
+          "Venus": 5,
+          "Saturn": 7,
+          "Rahu": 12,
+          "Ketu": 6
+        },
+        "D9": {
+          "Ascendant": 2,
+          "Sun": 3,
+          "Moon": 5,
+          "Mars": 3,
+          "Mercury": 12,
+          "Jupiter": 5,
+          "Venus": 4,
+          "Saturn": 3,
+          "Rahu": 11,
+          "Ketu": 5
+        },
+        "D10": {
+          "Ascendant": 3,
+          "Sun": 7,
+          "Moon": 6,
+          "Mars": 8,
+          "Mercury": 9,
+          "Jupiter": 1,
+          "Venus": 9,
+          "Saturn": 8,
+          "Rahu": 3,
+          "Ketu": 9
+        },
+        "D12": {
+          "Ascendant": 8,
+          "Sun": 7,
+          "Moon": 7,
+          "Mars": 1,
+          "Mercury": 3,
+          "Jupiter": 5,
+          "Venus": 3,
+          "Saturn": 8,
+          "Rahu": 7,
+          "Ketu": 1
+        },
+        "D16": {
+          "Ascendant": 1,
+          "Sun": 8,
+          "Moon": 9,
+          "Mars": 6,
+          "Mercury": 4,
+          "Jupiter": 3,
+          "Venus": 9,
+          "Saturn": 10,
+          "Rahu": 11,
+          "Ketu": 11
+        },
+        "D20": {
+          "Ascendant": 7,
+          "Sun": 1,
+          "Moon": 11,
+          "Mars": 5,
+          "Mercury": 7,
+          "Jupiter": 3,
+          "Venus": 8,
+          "Saturn": 3,
+          "Rahu": 8,
+          "Ketu": 8
+        },
+        "D24": {
+          "Ascendant": 4,
+          "Sun": 10,
+          "Moon": 6,
+          "Mars": 6,
+          "Mercury": 2,
+          "Jupiter": 7,
+          "Venus": 10,
+          "Saturn": 12,
+          "Rahu": 7,
+          "Ketu": 7
+        },
+        "D27": {
+          "Ascendant": 5,
+          "Sun": 7,
+          "Moon": 3,
+          "Mars": 8,
+          "Mercury": 11,
+          "Jupiter": 1,
+          "Venus": 12,
+          "Saturn": 9,
+          "Rahu": 8,
+          "Ketu": 2
+        },
+        "D30": {
+          "Ascendant": 12,
+          "Sun": 11,
+          "Moon": 9,
+          "Mars": 12,
+          "Mercury": 8,
+          "Jupiter": 2,
+          "Venus": 10,
+          "Saturn": 11,
+          "Rahu": 2,
+          "Ketu": 2
+        },
+        "D40": {
+          "Ascendant": 3,
+          "Sun": 9,
+          "Moon": 10,
+          "Mars": 7,
+          "Mercury": 8,
+          "Jupiter": 12,
+          "Venus": 1,
+          "Saturn": 2,
+          "Rahu": 1,
+          "Ketu": 1
+        },
+        "D45": {
+          "Ascendant": 4,
+          "Sun": 3,
+          "Moon": 1,
+          "Mars": 1,
+          "Mercury": 7,
+          "Jupiter": 6,
+          "Venus": 7,
+          "Saturn": 7,
+          "Rahu": 3,
+          "Ketu": 3
+        },
+        "D60": {
+          "Ascendant": 9,
+          "Sun": 6,
+          "Moon": 9,
+          "Mars": 7,
+          "Mercury": 12,
+          "Jupiter": 11,
+          "Venus": 3,
+          "Saturn": 12,
+          "Rahu": 3,
+          "Ketu": 9
+        }
+      },
+      "source_page": 112
+    }
+  },
+  "cross_vendor_tolerance_degrees": 0.05
+}

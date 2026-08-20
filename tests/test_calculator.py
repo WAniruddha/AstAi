@@ -84,6 +84,16 @@ def test_d1_d9_d10_are_present_and_complete() -> None:
     assert all(len(v.placements) == len(chart.planets) for v in chart.vargas)
 
 
+def test_navamsa_and_dasamsa_reference_rules() -> None:
+    from astai.engine.vargas import _varga_sign_and_degree
+
+    assert _varga_sign_and_degree(0.0, 9, "D9")[0] == 0
+    assert _varga_sign_and_degree(30.0, 9, "D9")[0] == 9
+    assert _varga_sign_and_degree(60.0, 9, "D9")[0] == 6
+    assert _varga_sign_and_degree(0.0, 10, "D10")[0] == 0
+    assert _varga_sign_and_degree(30.0, 10, "D10")[0] == 9
+
+
 def test_mean_node_opposition_is_exact() -> None:
     chart = calculate_chart(astro_sage_fixture())
     by_name = {p.body: p for p in chart.planets}
@@ -104,16 +114,7 @@ def test_api_health() -> None:
     response = TestClient(app).get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-
-
-def test_navamsa_and_dasamsa_reference_rules() -> None:
-    from astai.engine.vargas import _varga_sign_and_degree
-
-    assert _varga_sign_and_degree(0.0, 9, "D9")[0] == 0
-    assert _varga_sign_and_degree(30.0, 9, "D9")[0] == 9
-    assert _varga_sign_and_degree(60.0, 9, "D9")[0] == 6
-    assert _varga_sign_and_degree(0.0, 10, "D10")[0] == 0
-    assert _varga_sign_and_degree(30.0, 10, "D10")[0] == 9
+    assert response.json()["version"] == "0.4.0"
 
 
 def test_dst_ambiguous_time_requires_explicit_fold() -> None:
