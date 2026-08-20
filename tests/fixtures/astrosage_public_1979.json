@@ -1,0 +1,36 @@
+{
+  "provenance": {
+    "vendor": "AstroSage",
+    "document": "Career Report sample, Appendix-A",
+    "url": "https://cdn.astrosage.com/pdf/ca_report_pro_en.pdf",
+    "pages": [15, 16],
+    "retrieved": "2026-08-20"
+  },
+  "birth_data": {
+    "date": "1979-04-11",
+    "time": "18:23:24",
+    "place": "Agra",
+    "latitude": 27.15,
+    "longitude": 78.0,
+    "timezone": "Asia/Kolkata",
+    "ayanamsa": "Lahiri",
+    "node_model": "Mean"
+  },
+  "reference": {
+    "ascendant": {"longitude": 174.6530555556, "sign": "Virgo", "nakshatra": "Chitra", "pada": 1},
+    "planets": {
+      "Sun": {"longitude": 357.4852777778, "sign": "Pisces", "nakshatra": "Revati", "pada": 4},
+      "Moon": {"longitude": 165.7513888889, "sign": "Virgo", "nakshatra": "Hasta", "pada": 2},
+      "Mars": {"longitude": 339.9247222222, "sign": "Pisces", "nakshatra": "Uttara Bhadrapada", "pada": 2},
+      "Mercury": {"longitude": 332.9780555556, "sign": "Pisces", "nakshatra": "Purva Bhadrapada", "pada": 4},
+      "Jupiter": {"longitude": 95.8233333333, "sign": "Cancer", "nakshatra": "Pushya", "pada": 1},
+      "Venus": {"longitude": 322.4675, "sign": "Aquarius", "nakshatra": "Purva Bhadrapada", "pada": 1},
+      "Saturn": {"longitude": 134.1994444444, "sign": "Leo", "nakshatra": "Purva Phalguni", "pada": 1},
+      "Rahu": {"longitude": 142.3319444444, "sign": "Leo", "nakshatra": "Purva Phalguni", "pada": 3},
+      "Ketu": {"longitude": 322.3319444444, "sign": "Aquarius", "nakshatra": "Purva Bhadrapada", "pada": 1}
+    },
+    "panchanga": {"weekday": "Wednesday", "tithi": "Purnima", "paksha": "Shukla", "karana": "Vishti", "yoga": "Vyaghata"},
+    "dasha_balance": {"lord": "Moon", "years": 5, "months": 8, "days": 7}
+  },
+  "cross_vendor_tolerance_degrees": 0.05
+}

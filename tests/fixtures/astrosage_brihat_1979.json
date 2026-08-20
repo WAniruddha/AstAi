@@ -1,0 +1,36 @@
+{
+  "provenance": {
+    "vendor": "AstroSage",
+    "document": "Brihat Horoscope sample",
+    "url": "https://www.astrosage.com/pdf/brihat-horoscope.pdf",
+    "pages": [4, 7],
+    "retrieved": "2026-08-20"
+  },
+  "birth_data": {
+    "date": "1979-08-23",
+    "time": "23:53:18",
+    "place": "Delhi",
+    "latitude": 28.6666666667,
+    "longitude": 77.2166666667,
+    "timezone": "Asia/Kolkata",
+    "ayanamsa": "Lahiri",
+    "node_model": "Mean"
+  },
+  "reference": {
+    "ascendant": {"longitude": 45.2422222222, "sign": "Taurus", "nakshatra": "Rohini", "pada": 2},
+    "planets": {
+      "Sun": {"longitude": 126.4613888889, "sign": "Leo", "nakshatra": "Magha", "pada": 2},
+      "Moon": {"longitude": 137.8127777778, "sign": "Leo", "nakshatra": "Purva Phalguni", "pada": 2},
+      "Mars": {"longitude": 76.3947222222, "sign": "Gemini", "nakshatra": "Ardra", "pada": 3},
+      "Mercury": {"longitude": 108.9180555556, "sign": "Cancer", "nakshatra": "Ashlesha", "pada": 1},
+      "Jupiter": {"longitude": 118.7111111111, "sign": "Cancer", "nakshatra": "Ashlesha", "pada": 4},
+      "Venus": {"longitude": 125.9844444444, "sign": "Leo", "nakshatra": "Magha", "pada": 2},
+      "Saturn": {"longitude": 141.48, "sign": "Leo", "nakshatra": "Purva Phalguni", "pada": 3},
+      "Rahu": {"longitude": 135.2188888889, "sign": "Leo", "nakshatra": "Purva Phalguni", "pada": 1},
+      "Ketu": {"longitude": 315.2188888889, "sign": "Aquarius", "nakshatra": "Shatabhisha", "pada": 3}
+    },
+    "panchanga": {"weekday": "Thursday", "tithi": "Pratipada", "paksha": "Shukla", "karana": "Bava", "yoga": "Shiva"},
+    "dasha_balance": {"lord": "Venus", "years": 13, "months": 3, "days": 11, "day_tolerance": 3}
+  },
+  "cross_vendor_tolerance_degrees": 0.05
+}
