@@ -33,6 +33,15 @@ with st.sidebar:
     )
     timezone_name = st.text_input("IANA timezone", value="Asia/Kolkata")
     node_model = st.selectbox("Rahu/Ketu model", ["mean", "true"], index=0)
+    st.text_input(
+        "Parashari Bhava / Chalit method",
+        value="sripati",
+        disabled=True,
+        help=(
+            "v0.5 freezes Sripati: Porphyry Bhava Madhya with midpoint Sandhi boundaries. "
+            "This is separate from Whole Sign and KP/Placidus."
+        ),
+    )
     varga_profile = st.selectbox(
         "Varga profile",
         ["parashara_traditional", "astrosage_reference_compat_v1"],
@@ -82,6 +91,7 @@ try:
             elevation_m=elevation,
             timezone=timezone_name,
             node_model=node_model,
+            bhava_method="sripati",
             varga_profile=varga_profile,
             birth_time_uncertainty_seconds=birth_time_uncertainty,
             include_outer_planets=include_outer,
@@ -101,10 +111,20 @@ m2.metric(
 m3.metric("Ayanamsa", f"{chart.metadata.ayanamsa_degrees:.8f}°")
 m4.metric("Backend", chart.metadata.actual_ephemeris_backend.upper())
 
-positions_tab, d1_tab, varga_tab, panchanga_tab, dasha_tab, cusps_tab, audit_tab = st.tabs(
+(
+    positions_tab,
+    d1_tab,
+    bhava_tab,
+    varga_tab,
+    panchanga_tab,
+    dasha_tab,
+    cusps_tab,
+    audit_tab,
+) = st.tabs(
     [
         "Planetary positions",
-        "D1",
+        "D1 Whole Sign",
+        "Bhava / Chalit",
         "Shodashavarga",
         "Panchanga",
         "Vimshottari",
@@ -136,6 +156,10 @@ with positions_tab:
     )
 
 with d1_tab:
+    st.caption(
+        "Primary Parashari Rashi framework: each Ascendant sign becomes house 1. "
+        "This table is intentionally separate from Bhava/Chalit."
+    )
     st.dataframe(
         [
             {
@@ -144,6 +168,44 @@ with d1_tab:
                 "Planets": ", ".join(h.planets) if h.planets else "—",
             }
             for h in chart.whole_sign_houses
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+with bhava_tab:
+    b = chart.bhava_chalit
+    st.caption(
+        f"Methodology: {b.methodology}. Planet signs do not change; only Bhava house membership can shift. "
+        f"Swiss Sripati cross-check max delta: {b.swiss_sripati_crosscheck_max_arcseconds:.6g} arcsec."
+    )
+    st.subheader("Bhava Madhya and Sandhi")
+    st.dataframe(
+        [
+            {
+                "Bhava": h.house,
+                "Start Sandhi": f"{h.start_sign} {h.start_dms.text}",
+                "Bhava Madhya": f"{h.madhya_sign} {h.madhya_dms.text}",
+                "End Sandhi": f"{h.end_sign} {h.end_dms.text}",
+                "Span °": round(h.span_degrees, 8),
+                "Planets": ", ".join(h.planets) if h.planets else "—",
+            }
+            for h in b.houses
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.subheader("Chalit house shifts")
+    st.dataframe(
+        [
+            {
+                "Body": p.body,
+                "Rashi sign": p.rasi_sign,
+                "Whole-sign house": p.rasi_house,
+                "Bhava house": p.bhava_house,
+                "Shifted": p.shifted,
+            }
+            for p in b.placements
         ],
         use_container_width=True,
         hide_index=True,
@@ -192,19 +254,38 @@ with panchanga_tab:
     )
 
 with dasha_tab:
-    balance = chart.vimshottari.balance_at_birth
+    dasha = chart.vimshottari
+    balance = dasha.balance_at_birth
     st.info(
-        f"Balance at birth: {balance.lord} {balance.years}Y {balance.months}M {balance.days}D"
+        f"Balance at birth: {balance.lord} {balance.years}Y {balance.months}M {balance.days}D · "
+        f"calendar year basis {dasha.year_days} days"
     )
+    st.subheader("Birth timing path")
+    st.dataframe(
+        [
+            {
+                "Level": d.level,
+                "Lord": d.lord,
+                "Parent path": " / ".join(d.parent_path) if d.parent_path else "—",
+                "Start": d.start,
+                "End": d.end,
+            }
+            for d in dasha.birth_timing_path
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.subheader("Mahadashas")
     st.dataframe(
         [
             {
                 "Lord": d.lord,
                 "Start": d.start,
+                "Theoretical start": d.theoretical_start,
                 "End": d.end,
                 "Partial at birth": d.partial_at_birth,
             }
-            for d in chart.vimshottari.mahadashas
+            for d in dasha.mahadashas
         ],
         use_container_width=True,
         hide_index=True,
@@ -213,13 +294,29 @@ with dasha_tab:
         st.dataframe(
             [
                 {
-                    "MD": d.parent_lord,
+                    "MD": d.parent_path[0] if d.parent_path else None,
                     "AD": d.lord,
                     "Start": d.start,
                     "End": d.end,
                     "Partial at birth": d.partial_at_birth,
                 }
-                for d in chart.vimshottari.antardashas
+                for d in dasha.antardashas
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+    with st.expander("Pratyantardashas"):
+        st.dataframe(
+            [
+                {
+                    "MD": d.parent_path[0] if len(d.parent_path) > 0 else None,
+                    "AD": d.parent_path[1] if len(d.parent_path) > 1 else None,
+                    "PD": d.lord,
+                    "Start": d.start,
+                    "End": d.end,
+                    "Partial at birth": d.partial_at_birth,
+                }
+                for d in dasha.pratyantardashas
             ],
             use_container_width=True,
             hide_index=True,
@@ -227,8 +324,8 @@ with dasha_tab:
 
 with cusps_tab:
     st.caption(
-        "These are Lahiri sidereal Placidus cusps. They are not Parashari whole-sign "
-        "houses and are not yet the KP module."
+        "These are Lahiri sidereal Placidus cusps. They are not Whole Sign houses and are not "
+        "the Sripati Bhava/Chalit framework. They are retained as the future KP cusp basis."
     )
     st.dataframe(
         [

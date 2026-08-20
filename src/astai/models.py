@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 EphemerisPolicy = Literal["strict_swiss", "allow_moshier"]
 NodeModel = Literal["mean", "true"]
 VargaProfile = Literal["parashara_traditional", "astrosage_reference_compat_v1"]
+BhavaMethod = Literal["sripati"]
+DashaLevel = Literal["MD", "AD", "PD", "SD", "PRANA"]
 AuditStatus = Literal[
     "COMPUTED", "UNIT_TESTED", "REFERENCE_MATCHED", "CROSS_VERIFIED",
     "DERIVED", "WARNING", "NOT_COMPUTED",
@@ -30,6 +32,7 @@ class BirthData(BaseModel):
     include_outer_planets: bool = False
     dasha_year_days: float = Field(default=365.25, gt=365.0, lt=366.0)
     varga_profile: VargaProfile = "parashara_traditional"
+    bhava_method: BhavaMethod = "sripati"
     birth_time_uncertainty_seconds: float | None = Field(default=None, ge=0.0)
 
 
@@ -82,6 +85,38 @@ class HouseCusp(BaseModel):
     sign: str
     sign_degree: float
     dms: DMS
+
+
+class BhavaHouse(BaseModel):
+    house: int
+    start_longitude_sidereal: float
+    start_sign: str
+    start_dms: DMS
+    madhya_longitude_sidereal: float
+    madhya_sign: str
+    madhya_dms: DMS
+    end_longitude_sidereal: float
+    end_sign: str
+    end_dms: DMS
+    span_degrees: float
+    planets: list[str]
+
+
+class BhavaChalitPlacement(BaseModel):
+    body: str
+    longitude_sidereal: float
+    rasi_sign: str
+    rasi_house: int
+    bhava_house: int
+    shifted: bool
+
+
+class BhavaChalit(BaseModel):
+    methodology: str
+    boundary_policy: str
+    houses: list[BhavaHouse]
+    placements: list[BhavaChalitPlacement]
+    swiss_sripati_crosscheck_max_arcseconds: float
 
 
 class VargaPlacement(BaseModel):
@@ -140,11 +175,13 @@ class DashaBalance(BaseModel):
 
 
 class DashaPeriod(BaseModel):
-    level: Literal["MD", "AD"]
+    level: DashaLevel
     lord: str
     start: datetime
     end: datetime
     parent_lord: str | None = None
+    parent_path: list[str] = Field(default_factory=list)
+    theoretical_start: datetime | None = None
     partial_at_birth: bool = False
 
 
@@ -152,9 +189,13 @@ class VimshottariDasha(BaseModel):
     birth_nakshatra: str
     birth_nakshatra_lord: str
     year_days: float
+    methodology: str = "vimshottari_120_v1"
     balance_at_birth: DashaBalance
     mahadashas: list[DashaPeriod]
     antardashas: list[DashaPeriod]
+    pratyantardashas: list[DashaPeriod] = Field(default_factory=list)
+    birth_timing_path: list[DashaPeriod] = Field(default_factory=list)
+    coverage_end: datetime | None = None
 
 
 class CalculationMetadata(BaseModel):
@@ -172,6 +213,7 @@ class CalculationMetadata(BaseModel):
     ephemeris_policy: EphemerisPolicy
     zodiac: str = "sidereal"
     parashari_house_system: str = "whole_sign"
+    parashari_bhava_system: BhavaMethod = "sripati"
     secondary_cusp_system: str = "placidus"
     coordinate_frame: str = "apparent geocentric ecliptic of date"
     civil_time_source: str = "IANA tzdata"
@@ -192,6 +234,7 @@ class ChartResponse(BaseModel):
     midheaven: AngularPoint
     planets: list[PlanetPosition]
     whole_sign_houses: list[WholeSignHouse]
+    bhava_chalit: BhavaChalit
     placidus_cusps: list[HouseCusp]
     panchanga: Panchanga
     vargas: list[VargaChart]

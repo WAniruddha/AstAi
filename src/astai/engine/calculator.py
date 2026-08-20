@@ -8,6 +8,7 @@ import swisseph as swe
 from astai import __version__
 from astai.engine.astronomy import calculate_astronomy
 from astai.engine.dasha import calculate_vimshottari
+from astai.engine.houses import calculate_sripati_bhava
 from astai.engine.panchanga import calculate_panchanga
 from astai.engine.vargas import calculate_core_vargas, calculate_shodashavarga
 from astai.models import AuditItem, BirthData, CalculationMetadata, ChartResponse
@@ -22,6 +23,7 @@ def _calculation_fingerprint(data: BirthData, backend: str) -> str:
         "zodiac": "sidereal",
         "ayanamsa": "Lahiri",
         "parashari_houses": "whole_sign",
+        "parashari_bhava": data.bhava_method,
         "secondary_cusps": "placidus",
         "position_model": "apparent_geocentric_ecliptic_of_date",
     }
@@ -46,6 +48,12 @@ def calculate_chart(data: BirthData) -> ChartResponse:
     shodashavarga = calculate_shodashavarga(
         astronomy["ascendant"], planets, profile=data.varga_profile
     )
+    bhava_chalit = calculate_sripati_bhava(
+        astronomy["ascendant"],
+        planets,
+        astronomy["porphyry_madhyas"],
+        astronomy["sripati_boundaries"],
+    )
     vimshottari = calculate_vimshottari(
         astronomy["local_dt"], planets, year_days=data.dasha_year_days
     )
@@ -59,7 +67,20 @@ def calculate_chart(data: BirthData) -> ChartResponse:
         AuditItem(
             code="SIDEREAL_STANDARD",
             status="DERIVED",
-            message="Sidereal positions use Lahiri ayanamsa; whole-sign houses are kept separate from Placidus cusps.",
+            message=(
+                "Sidereal positions use Lahiri ayanamsa. Whole Sign, Sripati Bhava/Chalit, "
+                "and Placidus cusps are kept as separate house frameworks."
+            ),
+        ),
+        AuditItem(
+            code="SRIPATI_BHAVA_CHALIT",
+            status="CROSS_VERIFIED",
+            message=(
+                "Parashari Bhava/Chalit uses sripati_bhava_chalit_v1. Porphyry cusps are "
+                "treated as Bhava Madhya and adjacent Madhyas define Sripati Sandhi boundaries. "
+                "The independently derived boundaries match Swiss Ephemeris native Sripati "
+                f"within {bhava_chalit.swiss_sripati_crosscheck_max_arcseconds:.9g} arcsec."
+            ),
         ),
         AuditItem(
             code="SHODASHAVARGA",
@@ -73,8 +94,9 @@ def calculate_chart(data: BirthData) -> ChartResponse:
             code="VIMSHOTTARI",
             status="DERIVED",
             message=(
-                "Vimshottari balance and MD/AD periods use the Moon's exact Nakshatra position and "
-                f"{data.dasha_year_days} days per dasha year for timeline dates."
+                "Vimshottari balance, MD/AD/PD periods, and the five-level birth timing path "
+                "(through Sookshma and Prana) use the Moon's exact Nakshatra position and "
+                f"{data.dasha_year_days} days per dasha year for calendar dates."
             ),
         ),
     ]
@@ -137,12 +159,14 @@ def calculate_chart(data: BirthData) -> ChartResponse:
             ephemeris_library_version=swe.version,
             actual_ephemeris_backend=backend,
             ephemeris_policy=data.ephemeris_policy,
+            parashari_bhava_system=data.bhava_method,
             varga_profile=data.varga_profile,
         ),
         ascendant=astronomy["ascendant"],
         midheaven=astronomy["midheaven"],
         planets=planets,
         whole_sign_houses=astronomy["whole_sign_houses"],
+        bhava_chalit=bhava_chalit,
         placidus_cusps=astronomy["placidus_cusps"],
         panchanga=panchanga,
         vargas=vargas,
