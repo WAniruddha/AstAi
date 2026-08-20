@@ -7,20 +7,14 @@ from pydantic import BaseModel, Field
 
 EphemerisPolicy = Literal["strict_swiss", "allow_moshier"]
 NodeModel = Literal["mean", "true"]
+VargaProfile = Literal["parashara_traditional", "astrosage_reference_compat_v1"]
 AuditStatus = Literal[
-    "COMPUTED",
-    "UNIT_TESTED",
-    "REFERENCE_MATCHED",
-    "CROSS_VERIFIED",
-    "DERIVED",
-    "WARNING",
-    "NOT_COMPUTED",
+    "COMPUTED", "UNIT_TESTED", "REFERENCE_MATCHED", "CROSS_VERIFIED",
+    "DERIVED", "WARNING", "NOT_COMPUTED",
 ]
 
 
 class BirthData(BaseModel):
-    """Authoritative birth input for deterministic calculations."""
-
     name: str | None = None
     place_name: str | None = None
     date_of_birth: date
@@ -28,16 +22,15 @@ class BirthData(BaseModel):
     latitude: float = Field(ge=-90.0, le=90.0)
     longitude: float = Field(ge=-180.0, le=180.0)
     elevation_m: float = Field(default=0.0, ge=-500.0, le=9000.0)
-    timezone: str = Field(description="IANA timezone, e.g. Asia/Kolkata")
-    timezone_fold: Literal[0, 1] | None = Field(
-        default=None,
-        description="Required only when the local civil time is DST-ambiguous.",
-    )
+    timezone: str
+    timezone_fold: Literal[0, 1] | None = None
     ayanamsa: Literal["lahiri"] = "lahiri"
     node_model: NodeModel = "mean"
     ephemeris_policy: EphemerisPolicy = "strict_swiss"
     include_outer_planets: bool = False
     dasha_year_days: float = Field(default=365.25, gt=365.0, lt=366.0)
+    varga_profile: VargaProfile = "parashara_traditional"
+    birth_time_uncertainty_seconds: float | None = Field(default=None, ge=0.0)
 
 
 class DMS(BaseModel):
@@ -98,23 +91,30 @@ class VargaPlacement(BaseModel):
     house: int
     varga_degree: float
     dms: DMS
+    amsa_index: int
+    source_sign_degree: float
+    amsa_start_degree: float
+    amsa_end_degree: float
+    boundary_distance_arcminutes: float
 
 
 class VargaChart(BaseModel):
-    varga: Literal["D1", "D9", "D10"]
+    varga: str
+    division: int
+    name: str
+    methodology: str
     ascendant_sign_index: int
     ascendant_sign: str
     ascendant_degree: float
+    ascendant_dms: DMS
+    ascendant_amsa_index: int
+    ascendant_boundary_distance_arcminutes: float
     placements: list[VargaPlacement]
+    sensitivity_note: str | None = None
 
 
 class Panchanga(BaseModel):
-    weekday: str = Field(
-        description=(
-            "Hindu weekday, using local sunrise as the day boundary when "
-            "sunrise is available."
-        )
-    )
+    weekday: str
     civil_weekday: str
     sunrise_local: datetime | None = None
     sunset_local: datetime | None = None
@@ -176,6 +176,7 @@ class CalculationMetadata(BaseModel):
     coordinate_frame: str = "apparent geocentric ecliptic of date"
     civil_time_source: str = "IANA tzdata"
     calendar: str = "proleptic_gregorian"
+    varga_profile: VargaProfile = "parashara_traditional"
 
 
 class AuditItem(BaseModel):
@@ -194,5 +195,6 @@ class ChartResponse(BaseModel):
     placidus_cusps: list[HouseCusp]
     panchanga: Panchanga
     vargas: list[VargaChart]
+    shodashavarga: list[VargaChart]
     vimshottari: VimshottariDasha
     audit: list[AuditItem]

@@ -8,17 +8,21 @@ AstAi is a reusable Jyotisha computation, verification and interpretation platfo
 
 ### Layer 0 — Input and provenance
 
-Birth date, time, coordinates, IANA timezone, ayanamsa, node model and methodology choices are explicit immutable inputs. Every derived value must be traceable to these inputs.
+Birth date, time, coordinates, IANA timezone, ayanamsa, node model and methodology choices are explicit inputs. Every derived value must be traceable to them. Birth-time uncertainty is stored when supplied rather than converted into an invented confidence score.
 
 ### Layer 1 — Deterministic calculation core
 
-Swiss Ephemeris supplies astronomical positions. AstAi code derives the sidereal zodiac mapping, Nakshatra/Pada, houses and later divisional charts, Dashas, KP subdivisions, Jaimini, Arudha, strengths and other algorithmic systems.
+Swiss Ephemeris supplies the astronomical basis. AstAi derives sidereal zodiac mapping, Nakshatra/Pada, D1 Whole Sign houses, separate sidereal Placidus cusps, the classical Shodashavarga set and Vimshottari Mahadasha/Antardasha.
+
+Later deterministic modules include Bhava/Chalit, deeper Dashas, strengths, KP subdivisions, Jaimini, Arudha and Upagrahas.
 
 This layer is the source of truth for computed chart data.
 
 ### Layer 2 — Verification and audit
 
 Golden-reference fixtures compare AstAi results with trusted reference software or independently verified data. Calculation disagreements are surfaced rather than hidden.
+
+Astronomy compatibility and high-varga formula compatibility are tested separately because very small source-longitude differences can cross narrow divisional boundaries.
 
 ### Layer 3 — Knowledge layer
 
@@ -56,22 +60,25 @@ A trusted astrology-software PDF can be useful as a validation fixture or import
 
 A PDF is not a substitute for the calculation engine because it is a presentation of someone else's calculations. Parsing it can reproduce those displayed values, but it does not make the underlying method independently auditable.
 
-## Near-term module map
+## Current module map
 
 ```text
 src/astai/
   engine/
-    astronomy.py        # implemented foundation
-    houses.py           # next
-    vargas.py           # later
-    dasha.py            # later
-    kp.py               # later
+    astronomy.py        # implemented: ephemeris, time normalization, Lagna, cusps
+    vargas.py           # implemented: full classical Shodashavarga + named compatibility profile
+    dasha.py            # implemented: Vimshottari MD/AD; deeper levels next
+    panchanga.py        # implemented core Panchanga + solar events
+    calculator.py       # canonical chart assembly + audit metadata
+    houses.py           # next: explicit Bhava/Chalit convention
+    strengths.py        # later: Shadbala/Bhava Bala/Ashtakavarga
+    kp.py               # later: star/sub/sub-sub and significators
     jaimini.py          # later
     arudha.py           # later
     upagraha.py         # later
   knowledge/            # future source/rule retrieval
   llm/                  # future tool calling + synthesis
-  audit/                # golden fixtures + consistency checks
+  validation.py         # compatibility/reference validation
   models.py             # stable shared contracts
   api.py                # FastAPI
 streamlit_app.py        # development visualizer
@@ -79,10 +86,9 @@ streamlit_app.py        # development visualizer
 
 ## Recommended next milestones
 
-1. Add golden astronomical fixtures and exact-degree comparison tolerances.
-2. Make house-framework conventions explicit and separate Whole Sign, Bhava Chalit and KP cusps.
-3. Add D9 and D10 as the first divisional engine tests.
-4. Add Vimshottari Dasha with exact birth balance and date-boundary tests.
-5. Add KP star/sub/sub-sub subdivision engine and Placidus cusps.
-6. Add Jaimini and Arudha deterministic modules.
-7. Only after those layers are stable, add document ingestion/RAG and LLM tool calling.
+1. Add Vimshottari Pratyantar and deeper timing levels with boundary tests.
+2. Freeze and implement the Parashari Bhava/Chalit convention separately from KP Placidus cusps.
+3. Add Ashtakavarga and then Shadbala/Bhava Bala with independent fixtures.
+4. Build the KP deterministic engine: cusps, star lord, sub lord, sub-sub lord and significators.
+5. Add Jaimini, Arudha and Upagraha modules with explicit methodology identifiers.
+6. Only after the deterministic and audit layers are stable, add document ingestion/RAG and LLM tool calling.
