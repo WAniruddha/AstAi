@@ -6,12 +6,21 @@ import json
 import swisseph as swe
 
 from astai import __version__
+from astai.engine.ashtakavarga import calculate_raw_ashtakavarga
 from astai.engine.astronomy import calculate_astronomy
 from astai.engine.dasha import calculate_vimshottari
 from astai.engine.houses import calculate_sripati_bhava
 from astai.engine.panchanga import calculate_panchanga
 from astai.engine.vargas import calculate_core_vargas, calculate_shodashavarga
-from astai.models import AuditItem, BirthData, CalculationMetadata, ChartResponse
+from astai.models import (
+    Ashtakavarga,
+    AshtakavargaContribution,
+    AuditItem,
+    Bhinnashtakavarga,
+    BirthData,
+    CalculationMetadata,
+    ChartResponse,
+)
 
 
 def _calculation_fingerprint(data: BirthData, backend: str) -> str:
@@ -29,6 +38,39 @@ def _calculation_fingerprint(data: BirthData, backend: str) -> str:
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _ashtakavarga_model(ascendant, planets) -> Ashtakavarga:
+    classical_signs = {
+        planet.body: planet.sign_index
+        for planet in planets
+        if planet.body in {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"}
+    }
+    raw = calculate_raw_ashtakavarga(ascendant.sign_index, classical_signs)
+    return Ashtakavarga(
+        methodology=raw.methodology,
+        sign_order=list(raw.sign_order),
+        point_semantics=raw.point_semantics,
+        reduction_status=raw.reduction_status,
+        bhinna=[
+            Bhinnashtakavarga(
+                planet=bav.planet,
+                points_by_sign=list(bav.points_by_sign),
+                total=bav.total,
+                prastara=[
+                    AshtakavargaContribution(
+                        contributor=row.contributor,
+                        points_by_sign=list(row.points_by_sign),
+                        total=row.total,
+                    )
+                    for row in bav.prastara
+                ],
+            )
+            for bav in raw.bhinna
+        ],
+        sarva_points_by_sign=list(raw.sarva_points_by_sign),
+        sarva_total=raw.sarva_total,
+    )
 
 
 def calculate_chart(data: BirthData) -> ChartResponse:
@@ -57,6 +99,7 @@ def calculate_chart(data: BirthData) -> ChartResponse:
     vimshottari = calculate_vimshottari(
         astronomy["local_dt"], planets, year_days=data.dasha_year_days
     )
+    ashtakavarga = _ashtakavarga_model(astronomy["ascendant"], planets)
 
     audit = [
         AuditItem(
@@ -97,6 +140,17 @@ def calculate_chart(data: BirthData) -> ChartResponse:
                 "Vimshottari balance, MD/AD/PD periods, and the five-level birth timing path "
                 "(through Sookshma and Prana) use the Moon's exact Nakshatra position and "
                 f"{data.dasha_year_days} days per dasha year for calendar dates."
+            ),
+        ),
+        AuditItem(
+            code="ASHTAKAVARGA_RAW",
+            status="REFERENCE_MATCHED",
+            message=(
+                "Raw classical Ashtakavarga computes the seven planetary Bhinnashtakavargas, "
+                "all eight Prastara contributor rows for each planet, and Sarvashtakavarga. "
+                "The fixed BAV totals are 48/49/39/54/56/52/39 and the unreduced SAV total is 337; "
+                "the Delhi-1979 golden fixture matches the published AstroSage table exactly. "
+                "Trikona Shodhana, Ekadhipatya Shodhana and Shodhya Pinda are intentionally not computed yet."
             ),
         ),
     ]
@@ -172,5 +226,6 @@ def calculate_chart(data: BirthData) -> ChartResponse:
         vargas=vargas,
         shodashavarga=shodashavarga,
         vimshottari=vimshottari,
+        ashtakavarga=ashtakavarga,
         audit=audit,
     )
