@@ -7,6 +7,7 @@ import swisseph as swe
 
 from astai import __version__
 from astai.engine.ashtakavarga import calculate_raw_ashtakavarga
+from astai.engine.ashtakavarga_reductions import calculate_ashtakavarga_reductions
 from astai.engine.astronomy import calculate_astronomy
 from astai.engine.dasha import calculate_vimshottari
 from astai.engine.houses import calculate_sripati_bhava
@@ -15,11 +16,15 @@ from astai.engine.vargas import calculate_core_vargas, calculate_shodashavarga
 from astai.models import (
     Ashtakavarga,
     AshtakavargaContribution,
+    AshtakavargaPindaProfile,
+    AshtakavargaPindaResult,
+    AshtakavargaReductions,
     AuditItem,
     Bhinnashtakavarga,
     BirthData,
     CalculationMetadata,
     ChartResponse,
+    ReducedBhinnashtakavarga,
 )
 
 
@@ -47,6 +52,7 @@ def _ashtakavarga_model(ascendant, planets) -> Ashtakavarga:
         if planet.body in {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"}
     }
     raw = calculate_raw_ashtakavarga(ascendant.sign_index, classical_signs)
+    reductions = calculate_ashtakavarga_reductions(raw, classical_signs)
     return Ashtakavarga(
         methodology=raw.methodology,
         sign_order=list(raw.sign_order),
@@ -70,6 +76,37 @@ def _ashtakavarga_model(ascendant, planets) -> Ashtakavarga:
         ],
         sarva_points_by_sign=list(raw.sarva_points_by_sign),
         sarva_total=raw.sarva_total,
+        reductions=AshtakavargaReductions(
+            methodology=reductions.methodology,
+            occupancy_semantics=reductions.occupancy_semantics,
+            standard_pinda_profile=reductions.standard_pinda_profile,
+            bhinna=[
+                ReducedBhinnashtakavarga(
+                    planet=row.planet,
+                    raw_points_by_sign=list(row.raw_points_by_sign),
+                    trikona_points_by_sign=list(row.trikona_points_by_sign),
+                    ekadhipatya_points_by_sign=list(row.ekadhipatya_points_by_sign),
+                )
+                for row in reductions.bhinna
+            ],
+            pinda_profiles=[
+                AshtakavargaPindaProfile(
+                    profile=profile.profile,
+                    rasi_multipliers=list(profile.rasi_multipliers),
+                    graha_multipliers=dict(profile.graha_multipliers),
+                    results=[
+                        AshtakavargaPindaResult(
+                            planet=result.planet,
+                            rasi_pinda=result.rasi_pinda,
+                            graha_pinda=result.graha_pinda,
+                            shodhya_pinda=result.shodhya_pinda,
+                        )
+                        for result in profile.results
+                    ],
+                )
+                for profile in reductions.pinda_profiles
+            ],
+        ),
     )
 
 
@@ -149,8 +186,17 @@ def calculate_chart(data: BirthData) -> ChartResponse:
                 "Raw classical Ashtakavarga computes the seven planetary Bhinnashtakavargas, "
                 "all eight Prastara contributor rows for each planet, and Sarvashtakavarga. "
                 "The fixed BAV totals are 48/49/39/54/56/52/39 and the unreduced SAV total is 337; "
-                "the Delhi-1979 golden fixture matches the published AstroSage table exactly. "
-                "Trikona Shodhana, Ekadhipatya Shodhana and Shodhya Pinda are intentionally not computed yet."
+                "the Delhi-1979 golden fixture matches the published AstroSage table exactly."
+            ),
+        ),
+        AuditItem(
+            code="ASHTAKAVARGA_REDUCTIONS",
+            status="METHODOLOGY_DEPENDENT",
+            message=(
+                "Trikona and Ekadhipatya Shodhana use the declared bphs_common_v1 profile and preserve "
+                "the raw v0.6 values unchanged. Ekadhipatya occupancy counts only Sun through Saturn. "
+                "Shodhya Pinda is emitted under explicit multiplier profiles because circulated BPHS tables "
+                "and working software traditions disagree on some Rasi/Graha multipliers."
             ),
         ),
     ]

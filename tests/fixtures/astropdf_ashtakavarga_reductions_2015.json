@@ -1,0 +1,61 @@
+{
+  "vendor": "AstroPDF / Kushal Online Services",
+  "document": "sample-english-south.pdf",
+  "url": "https://astropdf.com/files/sample-english-south.pdf",
+  "birth": {
+    "name": "Kushal",
+    "date": "2015-06-17",
+    "time": "13:40:00",
+    "place": "Agra (U P), India",
+    "ayanamsa": "Lahiri"
+  },
+  "classical_planet_sign_indexes_0_based": {
+    "Sun": 2,
+    "Moon": 2,
+    "Mars": 2,
+    "Mercury": 1,
+    "Jupiter": 3,
+    "Venus": 3,
+    "Saturn": 7
+  },
+  "reference": {
+    "raw_bav": {
+      "Sun": [4, 2, 5, 5, 3, 4, 1, 4, 6, 4, 5, 5],
+      "Moon": [6, 3, 3, 4, 4, 3, 3, 6, 3, 4, 4, 6],
+      "Mars": [4, 3, 5, 4, 3, 4, 2, 4, 3, 1, 3, 3],
+      "Mercury": [5, 5, 4, 6, 2, 6, 4, 4, 4, 3, 7, 4],
+      "Jupiter": [6, 4, 4, 5, 4, 5, 5, 1, 5, 6, 5, 6],
+      "Venus": [6, 6, 2, 5, 4, 5, 5, 4, 1, 5, 5, 4],
+      "Saturn": [5, 3, 4, 2, 2, 3, 2, 4, 5, 3, 2, 4]
+    },
+    "after_trikona": {
+      "Sun": [1, 0, 4, 1, 0, 2, 0, 0, 3, 2, 4, 1],
+      "Moon": [3, 0, 0, 0, 1, 0, 0, 2, 0, 1, 1, 2],
+      "Mars": [1, 2, 3, 1, 0, 3, 0, 1, 0, 0, 1, 0],
+      "Mercury": [3, 2, 0, 2, 0, 3, 0, 0, 2, 0, 3, 0],
+      "Jupiter": [2, 0, 0, 4, 0, 1, 1, 0, 1, 2, 1, 5],
+      "Venus": [5, 1, 0, 1, 3, 0, 3, 0, 0, 0, 3, 0],
+      "Saturn": [3, 0, 2, 0, 0, 0, 0, 2, 3, 0, 0, 2]
+    },
+    "published_after_ekadhipatya": {
+      "methodology_status": "vendor_variant_not_assumed_to_equal_bphs_common_v1",
+      "Sun": [1, 0, 4, 1, 0, 0, 0, 0, 2, 0, 2, 0],
+      "Moon": [2, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 2],
+      "Mars": [0, 2, 3, 1, 0, 0, 0, 1, 0, 0, 1, 0],
+      "Mercury": [3, 2, 0, 2, 0, 3, 0, 0, 2, 0, 3, 0],
+      "Jupiter": [2, 0, 0, 4, 0, 1, 1, 0, 0, 1, 0, 4],
+      "Venus": [5, 1, 0, 1, 3, 0, 2, 0, 0, 0, 3, 0],
+      "Saturn": [2, 0, 2, 0, 0, 0, 0, 2, 1, 0, 0, 0]
+    },
+    "published_pinda": {
+      "profile_observation": "The published arithmetic is reproduced by the legacy Virgo=5 Rasi multiplier profile and the common 5/5/8/5/10/7/5 Graha factors when applied to the vendor's published post-Ekadhipatya rows.",
+      "Sun": {"rasi": 83, "graha": 89, "shodhya": 172},
+      "Moon": {"rasi": 64, "graha": 10, "shodhya": 74},
+      "Mars": {"rasi": 67, "graha": 86, "shodhya": 153},
+      "Mercury": {"rasi": 115, "graha": 44, "shodhya": 159},
+      "Jupiter": {"rasi": 95, "graha": 68, "shodhya": 163},
+      "Venus": {"rasi": 126, "graha": 22, "shodhya": 148},
+      "Saturn": {"rasi": 55, "graha": 46, "shodhya": 101}
+    }
+  }
+}
