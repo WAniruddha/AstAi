@@ -1,105 +1,240 @@
 from __future__ import annotations
 
-import os
 from datetime import date, time
 
 import streamlit as st
 
 from astai.engine import calculate_chart
-from astai.models import BirthData
+from astai.india_places import find_india_place, india_states, places_for_state
+from astai.models import BirthData, ChartResponse
+from astai.presentation import lagna_house_rows, planetary_position_rows
+from astai.product_inputs import (
+    D7_METHOD_OPTIONS,
+    birth_date_bounds,
+    calculation_request_signature,
+    d7_profile_from_label,
+    d7_profile_label,
+    resolve_ephemeris_runtime,
+)
 
 st.set_page_config(page_title="AstAi Calculator", page_icon="🪐", layout="wide")
 st.title("AstAi · Professional Kundali Calculator Lab")
 st.caption(
-    "Deterministic calculation first. Interpretation, RAG and LLM reasoning stay outside this layer."
+    "India-first birth input. Deterministic calculation remains separate from interpretation and LLM reasoning."
 )
 
-has_ephe_path = bool(os.getenv("ASTAI_EPHE_PATH"))
+runtime = resolve_ephemeris_runtime()
+min_dob, max_dob = birth_date_bounds()
+states = india_states()
+default_state = "Maharashtra"
+state_index = states.index(default_state) if default_state in states else 0
 
-with st.sidebar:
-    st.header("Birth data")
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def _calculate_chart_cached(request_json: str, runtime_key: str) -> dict:
+    """Cache deterministic chart results for repeated identical requests.
+
+    runtime_key deliberately participates in the cache key so a production Swiss
+    runtime can never reuse a development-mode Moshier result.
+    """
+
+    del runtime_key
+    request = BirthData.model_validate_json(request_json)
+    return calculate_chart(request).model_dump(mode="json")
+
+
+def _runtime_cache_key() -> str:
+    return f"{runtime.mode}|{runtime.policy}|{runtime.ephemeris_path or ''}"
+
+
+@st.fragment
+def _birth_controls() -> None:
+    """Render calculation-driving inputs without rerunning the full result page."""
+
+    st.header("Birth details")
     name = st.text_input("Name", value="")
-    place_name = st.text_input("Place name", value="")
-    dob = st.date_input("Date of birth", value=date(1990, 1, 1))
-    tob = st.time_input("Time of birth", value=time(12, 0))
-    latitude = st.number_input(
-        "Latitude", min_value=-90.0, max_value=90.0, value=19.0760, format="%.6f"
+    dob = st.date_input(
+        "Date of birth",
+        value=date(1990, 1, 1),
+        min_value=min_dob,
+        max_value=max_dob,
+        format="DD/MM/YYYY",
+        help=f"Supported range: {min_dob:%d/%m/%Y} to {max_dob:%d/%m/%Y}.",
     )
-    longitude = st.number_input(
-        "Longitude", min_value=-180.0, max_value=180.0, value=72.8777, format="%.6f"
+    tob = st.time_input(
+        "Time of birth",
+        value=time(12, 0, 0),
+        step=1,
+        help="Enter the recorded birth time as accurately as available, including seconds when known.",
+    )
+
+    st.subheader("Birth place")
+    st.selectbox("Country", ["India"], index=0, disabled=True)
+    state = st.selectbox("State / Union Territory", states, index=state_index)
+    state_places = places_for_state(state)
+    place_names = [place.name for place in state_places]
+    default_place_index = (
+        place_names.index("Pune")
+        if state == "Maharashtra" and "Pune" in place_names
+        else 0
+    )
+    place_name = st.selectbox(
+        "City / town",
+        place_names,
+        index=default_place_index,
+        key=f"birth_place_{state}",
+        help="Type while this list is open to filter the built-in India place catalog.",
+    )
+    selected_place = find_india_place(state, place_name)
+
+    st.caption(
+        f"Selected: {selected_place.label}\n\n"
+        f"City reference point: {selected_place.latitude:.6f}°, "
+        f"{selected_place.longitude:.6f}° · {selected_place.timezone}"
+    )
+
+    exact_coordinates = st.checkbox(
+        "Use exact birth coordinates (optional)",
+        value=False,
+        key=f"exact_coordinates_{state}_{place_name}",
+        help=(
+            "Leave this off to use the selected city's reference point. "
+            "Turn it on only when you know a more precise birth location."
+        ),
+    )
+
+    lat_col, lon_col = st.columns(2)
+    latitude = lat_col.number_input(
+        "Latitude",
+        min_value=6.0,
+        max_value=38.0,
+        value=float(selected_place.latitude),
+        step=0.000001,
+        format="%.6f",
+        disabled=not exact_coordinates,
+        key=f"latitude_{state}_{place_name}",
+        help="Decimal degrees, India-only product range.",
+    )
+    longitude = lon_col.number_input(
+        "Longitude",
+        min_value=68.0,
+        max_value=98.0,
+        value=float(selected_place.longitude),
+        step=0.000001,
+        format="%.6f",
+        disabled=not exact_coordinates,
+        key=f"longitude_{state}_{place_name}",
+        help="Decimal degrees, India-only product range.",
     )
     elevation = st.number_input(
-        "Elevation (m)", min_value=-500.0, max_value=9000.0, value=0.0, step=1.0
-    )
-    timezone_name = st.text_input("IANA timezone", value="Asia/Kolkata")
-    node_model = st.selectbox("Rahu/Ketu model", ["mean", "true"], index=0)
-    st.text_input(
-        "Parashari Bhava / Chalit method",
-        value="sripati",
-        disabled=True,
-        help=(
-            "v0.5 freezes Sripati: Porphyry Bhava Madhya with midpoint Sandhi boundaries. "
-            "This is separate from Whole Sign and KP/Placidus."
-        ),
-    )
-    varga_profile = st.selectbox(
-        "Varga profile",
-        ["parashara_traditional", "astrosage_reference_compat_v1"],
-        index=0,
-        help=(
-            "Use exact Parashari rules by default. AstroSage compatibility changes only D7 "
-            "to reproduce two public reference tables and is explicitly audited."
-        ),
-    )
-    birth_time_uncertainty = st.number_input(
-        "Birth-time uncertainty ± seconds (optional)",
-        min_value=0.0,
-        value=None,
+        "Elevation (m, optional)",
+        min_value=-50.0,
+        max_value=8600.0,
+        value=0.0,
         step=1.0,
-        help="Stored for sensitivity/audit. AstAi does not invent a confidence score.",
+        format="%.1f",
+        disabled=not exact_coordinates,
+        key=f"elevation_{state}_{place_name}",
+        help="Optional exact elevation. The default city calculation uses 0 m.",
     )
-    include_outer = st.checkbox("Include Uranus / Neptune / Pluto", value=False)
-    strict = st.checkbox(
-        "Strict Swiss/JPL ephemeris",
-        value=has_ephe_path,
-        help=(
-            "Requires ASTAI_EPHE_PATH containing verified Swiss Ephemeris data files. "
-            "If disabled, Moshier fallback is allowed but explicitly reported."
-        ),
-    )
-    calculate = st.button("Calculate chart", type="primary", use_container_width=True)
-
-if not has_ephe_path:
-    st.warning(
-        "ASTAI_EPHE_PATH is not configured in this runtime. Strict production calculations "
-        "will refuse a silent Moshier fallback."
+    timezone_name = selected_place.timezone
+    st.caption(
+        "The city reference coordinates are used automatically. "
+        "Exact-coordinate override is optional."
     )
 
-if not calculate:
-    st.info("Enter authoritative birth data in the sidebar, then calculate.")
-    st.stop()
-
-try:
-    chart = calculate_chart(
-        BirthData(
-            name=name or None,
-            place_name=place_name or None,
-            date_of_birth=dob,
-            time_of_birth=tob,
-            latitude=latitude,
-            longitude=longitude,
-            elevation_m=elevation,
-            timezone=timezone_name,
-            node_model=node_model,
-            bhava_method="sripati",
-            varga_profile=varga_profile,
-            birth_time_uncertainty_seconds=birth_time_uncertainty,
-            include_outer_planets=include_outer,
-            ephemeris_policy="strict_swiss" if strict else "allow_moshier",
+    with st.expander("Advanced calculation settings"):
+        st.caption("Most users can leave these settings unchanged.")
+        node_model = st.selectbox(
+            "Rahu / Ketu model",
+            ["mean", "true"],
+            index=0,
+            help=(
+                "Mean and True Rahu/Ketu are different node models. "
+                "Changing this setting requires recalculation."
+            ),
         )
+        d7_labels = [label for label, _ in D7_METHOD_OPTIONS]
+        d7_method_label = st.selectbox(
+            "D7 (Saptamsa) method",
+            d7_labels,
+            index=0,
+            help=(
+                "This affects D7 only. D1, D2, D9, D10 and the other Vargas "
+                "remain on the frozen AstAi/Parashari formulas."
+            ),
+        )
+        varga_profile = d7_profile_from_label(d7_method_label)
+        birth_time_uncertainty = st.number_input(
+            "Birth-time uncertainty ± seconds (optional)",
+            min_value=0.0,
+            value=None,
+            step=1.0,
+        )
+        st.text_input("Parashari Bhava / Chalit", value="Sripati", disabled=True)
+        st.text_input("Timezone", value=timezone_name, disabled=True)
+        st.caption(
+            "Uranus, Neptune and Pluto are always included as non-classical chart bodies. "
+            "Traditional algorithms remain restricted to declared classical contributors."
+        )
+        st.caption(f"Runtime: {runtime.mode}. Ephemeris policy is selected automatically.")
+
+    current_request = BirthData(
+        name=name or None,
+        place_name=selected_place.label,
+        date_of_birth=dob,
+        time_of_birth=tob,
+        latitude=latitude,
+        longitude=longitude,
+        elevation_m=elevation,
+        timezone=timezone_name,
+        node_model=node_model,
+        bhava_method="sripati",
+        varga_profile=varga_profile,
+        birth_time_uncertainty_seconds=birth_time_uncertainty,
+        include_outer_planets=True,
+        ephemeris_policy=runtime.policy,
     )
-except Exception as exc:
-    st.error(f"Calculation failed: {exc}")
+    current_signature = calculation_request_signature(current_request)
+    st.session_state["astai_draft_signature"] = current_signature
+
+    stored_chart = st.session_state.get("astai_chart")
+    stored_signature = st.session_state.get("astai_chart_request_signature")
+    if stored_chart is not None and stored_signature != current_signature:
+        st.warning(
+            "Changes are staged; the chart on the right is still the last calculated result. "
+            "Click **Recalculate Kundali** to apply them."
+        )
+
+    button_label = "Recalculate Kundali" if stored_chart is not None else "Calculate Kundali"
+    if st.button(button_label, type="primary", use_container_width=True):
+        try:
+            with st.spinner("Calculating Kundali…"):
+                payload = _calculate_chart_cached(
+                    current_request.model_dump_json(),
+                    _runtime_cache_key(),
+                )
+                calculated_chart = ChartResponse.model_validate(payload)
+        except Exception as exc:
+            st.error(f"Calculation failed: {exc}")
+        else:
+            st.session_state["astai_chart"] = calculated_chart
+            st.session_state["astai_chart_request_signature"] = current_signature
+            # Only an actual calculation refreshes the full result area.
+            st.rerun()
+
+
+with st.sidebar:
+    _birth_controls()
+
+if runtime.mode == "development":
+    st.info(runtime.user_message)
+else:
+    st.success(runtime.user_message)
+
+chart = st.session_state.get("astai_chart")
+if chart is None:
+    st.info("Enter the birth details in the sidebar, choose the Indian birth place, then calculate.")
     st.stop()
 
 m1, m2, m3, m4 = st.columns(4)
@@ -110,6 +245,15 @@ m2.metric(
 )
 m3.metric("Ayanamsa", f"{chart.metadata.ayanamsa_degrees:.8f}°")
 m4.metric("Backend", chart.metadata.actual_ephemeris_backend.upper())
+st.caption(
+    f"Calculated place: {chart.input.place_name} · "
+    f"lat {chart.input.latitude:.6f}°, lon {chart.input.longitude:.6f}° · "
+    f"{chart.input.timezone}"
+)
+st.caption(
+    f"Calculated settings: {chart.input.node_model.title()} Rahu/Ketu · "
+    f"D7 method: {d7_profile_label(chart.input.varga_profile)}."
+)
 
 (
     positions_tab,
@@ -123,7 +267,7 @@ m4.metric("Backend", chart.metadata.actual_ephemeris_backend.upper())
 ) = st.tabs(
     [
         "Planetary positions",
-        "D1 Whole Sign",
+        "Lagna (D1)",
         "Bhava / Chalit",
         "Shodashavarga",
         "Panchanga",
@@ -135,42 +279,23 @@ m4.metric("Backend", chart.metadata.actual_ephemeris_backend.upper())
 
 with positions_tab:
     st.dataframe(
-        [
-            {
-                "Body": p.body,
-                "Sign": p.sign,
-                "DMS": p.dms.text,
-                "Sidereal °": round(p.longitude_sidereal, 9),
-                "Tropical °": round(p.longitude_tropical, 9),
-                "Nakshatra": p.nakshatra,
-                "Pada": p.pada,
-                "Star Lord": p.nakshatra_lord,
-                "Speed °/day": round(p.speed_longitude, 9),
-                "Retrograde": p.retrograde,
-                "Backend": p.ephemeris_backend,
-            }
-            for p in chart.planets
-        ],
+        planetary_position_rows(chart),
         use_container_width=True,
         hide_index=True,
     )
 
 with d1_tab:
-    st.caption(
-        "Primary Parashari Rashi framework: each Ascendant sign becomes house 1. "
-        "This table is intentionally separate from Bhava/Chalit."
-    )
+    st.subheader("Lagna (D1) · Whole Sign")
+    st.caption("Primary Parashari Rashi framework. This is intentionally separate from Bhava/Chalit.")
     st.dataframe(
-        [
-            {
-                "House": h.house,
-                "Sign": h.sign,
-                "Planets": ", ".join(h.planets) if h.planets else "—",
-            }
-            for h in chart.whole_sign_houses
-        ],
+        lagna_house_rows(chart),
         use_container_width=True,
         hide_index=True,
+    )
+    moon = next(planet for planet in chart.planets if planet.body == "Moon")
+    st.caption(
+        f"Ascendant (Lagna): {chart.ascendant.sign} {chart.ascendant.dms.text}. "
+        f"★ marks the Moon sign (Chandra Rashi): {moon.sign}."
     )
 
 with bhava_tab:
@@ -211,12 +336,28 @@ with bhava_tab:
         hide_index=True,
     )
 
-with varga_tab:
-    codes = [v.varga for v in chart.shodashavarga]
-    selected_code = st.selectbox("Select divisional chart", codes, index=codes.index("D9"))
-    varga = next(v for v in chart.shodashavarga if v.varga == selected_code)
+
+@st.fragment
+def _render_varga_panel() -> None:
+    current_chart = st.session_state.get("astai_chart")
+    if current_chart is None:
+        return
+    codes = [v.varga for v in current_chart.shodashavarga]
+    if st.session_state.get("selected_varga_code") not in codes:
+        st.session_state["selected_varga_code"] = "D9" if "D9" in codes else codes[0]
+    selected_code = st.selectbox(
+        "Select divisional chart",
+        codes,
+        key="selected_varga_code",
+    )
+    varga = next(v for v in current_chart.shodashavarga if v.varga == selected_code)
     st.subheader(f"{varga.varga} · {varga.name} · Ascendant {varga.ascendant_sign}")
     st.caption(f"Methodology: {varga.methodology}")
+    if selected_code == "D7":
+        st.caption(
+            f"Calculated D7 profile: {d7_profile_label(current_chart.input.varga_profile)}. "
+            "The AstroSage compatibility option affects D7 only."
+        )
     if varga.sensitivity_note:
         st.warning(varga.sensitivity_note)
     st.dataframe(
@@ -235,22 +376,42 @@ with varga_tab:
         hide_index=True,
     )
 
+
+with varga_tab:
+    _render_varga_panel()
+
 with panchanga_tab:
     p = chart.panchanga
     c1, c2, c3 = st.columns(3)
-    c1.metric("Hindu weekday", p.weekday)
+    c1.metric("Vara (weekday)", p.weekday)
     c2.metric("Sunrise", p.sunrise_local.strftime("%H:%M:%S") if p.sunrise_local else "Unavailable")
     c3.metric("Sunset", p.sunset_local.strftime("%H:%M:%S") if p.sunset_local else "Unavailable")
-    st.write(
-        {
-            "Civil weekday": p.civil_weekday,
-            "Birth before sunrise": p.birth_before_sunrise,
-            "Tithi": f"{p.paksha} {p.tithi_name}",
-            "Karana": p.karana,
-            "Yoga": p.yoga_name,
-            "Moon Rashi": p.moon_rashi,
-            "Moon Nakshatra": f"{p.moon_nakshatra}-{p.moon_pada}",
-        }
+    st.subheader("Panchanga details")
+    st.dataframe(
+        [
+            {"Element": "Tithi", "Value": f"{p.paksha} {p.tithi_name}"},
+            {"Element": "Karana", "Value": p.karana},
+            {"Element": "Yoga", "Value": p.yoga_name},
+            {"Element": "Moon Rashi", "Value": p.moon_rashi},
+            {"Element": "Moon Nakshatra", "Value": f"{p.moon_nakshatra}-{p.moon_pada}"},
+            {"Element": "Civil weekday", "Value": p.civil_weekday},
+            {
+                "Element": "Birth before sunrise",
+                "Value": (
+                    "Yes"
+                    if p.birth_before_sunrise is True
+                    else "No"
+                    if p.birth_before_sunrise is False
+                    else "Unknown"
+                ),
+            },
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.caption(
+        "This tab currently reports Vara, Tithi, Karana, Yoga, Moon Rashi and Moon Nakshatra. "
+        "Additional classifications will be added only when their methodology is explicitly frozen."
     )
 
 with dasha_tab:
@@ -324,8 +485,8 @@ with dasha_tab:
 
 with cusps_tab:
     st.caption(
-        "These are Lahiri sidereal Placidus cusps. They are not Whole Sign houses and are not "
-        "the Sripati Bhava/Chalit framework. They are retained as the future KP cusp basis."
+        "These are Lahiri sidereal Placidus cusps. They are separate from Whole Sign and Sripati Bhava/Chalit, "
+        "and are retained as the future KP cusp basis."
     )
     st.dataframe(
         [
@@ -342,6 +503,11 @@ with cusps_tab:
     )
 
 with audit_tab:
+    st.write(f"**Birth place used:** {chart.input.place_name}")
+    st.write(
+        f"**Coordinates used:** {chart.input.latitude:.6f}°, "
+        f"{chart.input.longitude:.6f}° · elevation {chart.input.elevation_m:.1f} m"
+    )
     for item in chart.audit:
         st.write(f"**{item.status} · {item.code}**: {item.message}")
     st.caption(

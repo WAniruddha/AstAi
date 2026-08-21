@@ -1,0 +1,48 @@
+{
+  "vendor": "AstroSage",
+  "reference_name": "Traditional Saswad 2000 benchmark",
+  "source_type": "user_supplied_screenshot",
+  "source_note": "Traditional horoscope screenshot supplied by the user during v0.5.1 validation.",
+  "birth_data": {
+    "date": "2000-08-27",
+    "time": "13:37:00",
+    "place": "Saswad",
+    "timezone": "Asia/Kolkata",
+    "ayanamsa": "lahiri",
+    "node_model": "mean",
+    "longitude_printed": "74.0.E",
+    "latitude_printed": "18.32.N",
+    "coordinate_status": "ambiguous_legacy_vendor_notation",
+    "coordinate_note": "The screenshot does not establish whether the dotted notation is decimal degrees, degrees/minutes, or a legacy atlas format. AstAi preserves the printed values and does not force an interpretation merely to fit the reference Ascendant."
+  },
+  "reference": {
+    "ascendant": {
+      "longitude": 231.02305555555557,
+      "sign": "Scorpio",
+      "nakshatra": "Jyeshtha",
+      "pada": 2,
+      "vendor_dms": "21-01-23",
+      "validation_status": "TRANSCRIBED_NOT_COORDINATE_VERIFIED"
+    },
+    "planets": {
+      "Sun": {"longitude": 130.50416666666666, "sign": "Leo", "nakshatra": "Magha", "pada": 4, "vendor_dms": "10-30-15"},
+      "Moon": {"longitude": 101.5786111111111, "sign": "Cancer", "nakshatra": "Pushya", "vendor_nakshatra": "Pashyami", "pada": 3, "vendor_dms": "11-34-43"},
+      "Mars": {"longitude": 113.03388888888888, "sign": "Cancer", "nakshatra": "Ashlesha", "pada": 2, "vendor_dms": "23-02-02"},
+      "Mercury": {"longitude": 135.67027777777776, "sign": "Leo", "nakshatra": "Purva Phalguni", "vendor_nakshatra": "Purvaphalguni", "pada": 1, "vendor_dms": "15-40-13"},
+      "Jupiter": {"longitude": 45.59138888888889, "sign": "Taurus", "nakshatra": "Rohini", "pada": 2, "vendor_dms": "15-35-29"},
+      "Venus": {"longitude": 151.47555555555556, "sign": "Virgo", "nakshatra": "Uttara Phalguni", "vendor_nakshatra": "Uttaraphal", "pada": 2, "vendor_dms": "01-28-32"},
+      "Saturn": {"longitude": 36.888888888888886, "sign": "Taurus", "nakshatra": "Krittika", "pada": 4, "vendor_dms": "06-53-20"},
+      "Rahu": {"longitude": 88.52694444444444, "sign": "Gemini", "nakshatra": "Punarvasu", "pada": 3, "vendor_dms": "28-31-37"},
+      "Ketu": {"longitude": 268.52694444444444, "sign": "Sagittarius", "nakshatra": "Uttara Ashadha", "vendor_nakshatra": "Uttarashadha", "pada": 1, "vendor_dms": "28-31-37"},
+      "Uranus": {"longitude": 294.4372222222222, "sign": "Capricorn", "nakshatra": "Dhanishtha", "vendor_nakshatra": "Dhanishta", "pada": 1, "vendor_dms": "24-26-14", "retrograde": true},
+      "Neptune": {"longitude": 280.4602777777778, "sign": "Capricorn", "nakshatra": "Shravana", "vendor_nakshatra": "Sravana", "pada": 1, "vendor_dms": "10-27-37", "retrograde": true},
+      "Pluto": {"longitude": 226.22722222222222, "sign": "Scorpio", "nakshatra": "Anuradha", "pada": 4, "vendor_dms": "16-13-38", "retrograde": false}
+    }
+  },
+  "tolerances_arcseconds": {
+    "classical_planets": 75.0,
+    "nodes": 30.0,
+    "outer_planets": 330.0
+  },
+  "validation_note": "Planetary comparisons are retained as cross-vendor compatibility checks. The Ascendant is transcribed but is not used as a numerical pass/fail check until the exact coordinate convention used by the source report is independently established."
+}
