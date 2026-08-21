@@ -260,6 +260,7 @@ st.caption(
     d1_tab,
     bhava_tab,
     varga_tab,
+    ashtakavarga_tab,
     panchanga_tab,
     dasha_tab,
     cusps_tab,
@@ -270,6 +271,7 @@ st.caption(
         "Lagna (D1)",
         "Bhava / Chalit",
         "Shodashavarga",
+        "Ashtakavarga",
         "Panchanga",
         "Vimshottari",
         "Placidus cusps",
@@ -379,6 +381,77 @@ def _render_varga_panel() -> None:
 
 with varga_tab:
     _render_varga_panel()
+
+
+@st.fragment
+def _render_ashtakavarga_panel() -> None:
+    current_chart = st.session_state.get("astai_chart")
+    if current_chart is None:
+        return
+
+    av = current_chart.ashtakavarga
+    st.caption(
+        f"Methodology: {av.methodology} · status: {av.reduction_status}. "
+        "These are raw classical scores; Trikona Shodhana, Ekadhipatya Shodhana and Shodhya Pinda are not applied."
+    )
+
+    st.subheader("Sarvashtakavarga (SAV)")
+    st.dataframe(
+        [
+            {"Sign": sign, "SAV points": points}
+            for sign, points in zip(av.sign_order, av.sarva_points_by_sign)
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.metric("SAV total", av.sarva_total)
+
+    planets = [bav.planet for bav in av.bhinna]
+    if st.session_state.get("selected_bav_planet") not in planets:
+        st.session_state["selected_bav_planet"] = planets[0]
+    selected_planet = st.selectbox(
+        "Select Bhinnashtakavarga",
+        planets,
+        key="selected_bav_planet",
+    )
+    bav = next(item for item in av.bhinna if item.planet == selected_planet)
+
+    st.subheader(f"{selected_planet} Bhinnashtakavarga (BAV)")
+    st.dataframe(
+        [
+            {"Sign": sign, "BAV points": points}
+            for sign, points in zip(av.sign_order, bav.points_by_sign)
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.metric(f"{selected_planet} BAV total", bav.total)
+
+    st.subheader("Prastara contribution matrix")
+    st.caption(av.point_semantics)
+    st.dataframe(
+        [
+            {
+                "Contributor": row.contributor,
+                **{
+                    sign: point
+                    for sign, point in zip(av.sign_order, row.points_by_sign)
+                },
+                "Total": row.total,
+            }
+            for row in bav.prastara
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.caption(
+        "Classical contributors are Sun through Saturn plus Ascendant/Lagna. "
+        "Rahu, Ketu, Uranus, Neptune and Pluto are intentionally excluded from raw classical Ashtakavarga."
+    )
+
+
+with ashtakavarga_tab:
+    _render_ashtakavarga_panel()
 
 with panchanga_tab:
     p = chart.panchanga

@@ -198,6 +198,29 @@ class VimshottariDasha(BaseModel):
     coverage_end: datetime | None = None
 
 
+class AshtakavargaContribution(BaseModel):
+    contributor: str
+    points_by_sign: list[int]
+    total: int
+
+
+class Bhinnashtakavarga(BaseModel):
+    planet: str
+    points_by_sign: list[int]
+    total: int
+    prastara: list[AshtakavargaContribution]
+
+
+class Ashtakavarga(BaseModel):
+    methodology: str = "classical_raw_ashtakavarga_v1"
+    sign_order: list[str]
+    point_semantics: str = "1 = benefic support; 0 = no benefic support"
+    reduction_status: Literal["unreduced"] = "unreduced"
+    bhinna: list[Bhinnashtakavarga]
+    sarva_points_by_sign: list[int]
+    sarva_total: int
+
+
 class CalculationMetadata(BaseModel):
     calculation_fingerprint: str
     julian_day_ut: float
@@ -240,4 +263,5 @@ class ChartResponse(BaseModel):
     vargas: list[VargaChart]
     shodashavarga: list[VargaChart]
     vimshottari: VimshottariDasha
+    ashtakavarga: Ashtakavarga
     audit: list[AuditItem]

@@ -1,0 +1,100 @@
+{
+  "provenance": {
+    "vendor": "AstroSage",
+    "document": "Brihat Horoscope sample",
+    "url": "https://www.astrosage.com/pdf/brihat-horoscope.pdf",
+    "printed_pages": [123, 124, 125, 126, 127, 128, 129, 130]
+  },
+  "birth_data": {
+    "date": "1979-08-23",
+    "time": "23:53:18",
+    "place": "Delhi",
+    "latitude": 28.6666666667,
+    "longitude": 77.2166666667,
+    "timezone": "Asia/Kolkata",
+    "ayanamsa": "Lahiri",
+    "node_model": "Mean"
+  },
+  "methodology": {
+    "name": "classical_raw_ashtakavarga_v1",
+    "reduction_status": "unreduced",
+    "point_semantics": "1 = benefic support; 0 = no benefic support",
+    "sign_order": ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"],
+    "contributors": ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Ascendant"],
+    "prastara_encoding": "12-character Aries-through-Pisces binary string"
+  },
+  "source_sign_indexes_0_based": {
+    "Ascendant": 1,
+    "Sun": 4,
+    "Moon": 4,
+    "Mars": 2,
+    "Mercury": 3,
+    "Jupiter": 3,
+    "Venus": 4,
+    "Saturn": 4
+  },
+  "reference": {
+    "bhinna": {
+      "Sun": {
+        "points_by_sign": [5, 5, 5, 3, 3, 4, 2, 4, 3, 3, 5, 6],
+        "total": 48,
+        "prastara": {
+          "Sun": "111011010011", "Moon": "011000100100", "Mars": "101101001111", "Mercury": "111001011001",
+          "Jupiter": "010000011001", "Venus": "000100000110", "Saturn": "111011010011", "Ascendant": "100110100011"
+        }
+      },
+      "Moon": {
+        "points_by_sign": [4, 5, 5, 4, 2, 1, 8, 3, 2, 5, 7, 3],
+        "total": 49,
+        "prastara": {
+          "Sun": "011000100111", "Moon": "011010100110", "Mars": "100110110011", "Mercury": "110101110110",
+          "Jupiter": "111100100110", "Venus": "111000111010", "Saturn": "001000101100", "Ascendant": "000100100011"
+        }
+      },
+      "Mars": {
+        "points_by_sign": [3, 5, 6, 3, 1, 2, 3, 2, 4, 4, 2, 4],
+        "total": 39,
+        "prastara": {
+          "Sun": "011000101100", "Moon": "001000100100", "Mars": "101101001101", "Mercury": "010001011000",
+          "Jupiter": "111000001000", "Venus": "001100000101", "Saturn": "111010010011", "Ascendant": "010100100011"
+        }
+      },
+      "Mercury": {
+        "points_by_sign": [5, 5, 8, 3, 3, 5, 2, 4, 6, 3, 4, 6],
+        "total": 54,
+        "prastara": {
+          "Sun": "101100001100", "Moon": "011001010101", "Mars": "101101001111", "Mercury": "111101011001",
+          "Jupiter": "011000001010", "Venus": "101011111001", "Saturn": "111011010011", "Ascendant": "011010101011"
+        }
+      },
+      "Jupiter": {
+        "points_by_sign": [6, 5, 5, 4, 4, 6, 5, 3, 5, 5, 4, 4],
+        "total": 56,
+        "prastara": {
+          "Sun": "111011110011", "Moon": "101001001010", "Mars": "101101001101", "Mercury": "110110111001",
+          "Jupiter": "110111100110", "Venus": "111001001100", "Saturn": "000100101100", "Ascendant": "011011110111"
+        }
+      },
+      "Venus": {
+        "points_by_sign": [5, 6, 5, 3, 4, 4, 4, 6, 5, 1, 2, 7],
+        "total": 52,
+        "prastara": {
+          "Sun": "001100000001", "Moon": "101111111001", "Mars": "110010110010", "Mercury": "010001011001",
+          "Jupiter": "110000010011", "Venus": "111011111001", "Saturn": "111000111001", "Ascendant": "011111001101"
+        }
+      },
+      "Saturn": {
+        "points_by_sign": [2, 5, 6, 2, 3, 1, 4, 3, 3, 3, 3, 4],
+        "total": 39,
+        "prastara": {
+          "Sun": "011011010011", "Moon": "001000100100", "Mars": "110010110001", "Mercury": "111000001011",
+          "Jupiter": "011000011000", "Venus": "001100000100", "Saturn": "001000101100", "Ascendant": "010110100011"
+        }
+      }
+    },
+    "sarvashtakavarga": {
+      "points_by_sign": [30, 36, 40, 22, 20, 23, 28, 25, 28, 24, 27, 34],
+      "total": 337
+    }
+  }
+}
