@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import pytest
 
+from astai.engine.saptavargaja import SAPTAVARGA_CODES, calculate_saptavargaja_bala
 from astai.engine.shadbala import (
+    ASTAI_STANDARD_SAPTAVARGAJA_PROFILE,
     CLASSICAL_PLANETS,
     calculate_drekkana_bala,
     calculate_kendradi_bala,
@@ -81,7 +83,7 @@ def test_naisargika_bala_is_fixed_60_over_7_sequence():
         assert calculate_naisargika_bala(planet) == pytest.approx(60.0 * factor / 7.0)
 
 
-def test_foundation_is_seven_classical_planets_only_and_refuses_fake_total():
+def _foundation_inputs():
     planet_longitudes = {
         "Sun": 10.0,
         "Moon": 33.0,
@@ -108,6 +110,31 @@ def test_foundation_is_seven_classical_planets_only_and_refuses_fake_total():
         "Venus": 11,
         "Saturn": 6,
     }
+    return (
+        planet_longitudes,
+        planet_sign_indexes,
+        planet_sign_degrees,
+        navamsa_sign_indexes,
+    )
+
+
+def _synthetic_saptavarga_positions(planet_sign_indexes, planet_sign_degrees):
+    return {
+        planet: {
+            code: (planet_sign_indexes[planet], planet_sign_degrees[planet])
+            for code in SAPTAVARGA_CODES
+        }
+        for planet in CLASSICAL_PLANETS
+    }
+
+
+def test_foundation_is_seven_classical_planets_only_and_refuses_fake_total():
+    (
+        planet_longitudes,
+        planet_sign_indexes,
+        planet_sign_degrees,
+        navamsa_sign_indexes,
+    ) = _foundation_inputs()
 
     result = calculate_shadbala_foundation(
         ascendant_sign_index=0,
@@ -119,6 +146,7 @@ def test_foundation_is_seven_classical_planets_only_and_refuses_fake_total():
 
     assert [row.planet for row in result.rows] == list(CLASSICAL_PLANETS)
     assert "saptavargaja_pending" in result.aggregation_status
+    assert result.saptavargaja_profile is None
     for row in result.rows:
         assert row.saptavargaja_bala_virupas is None
         assert row.sthana_bala_total_virupas is None
@@ -127,6 +155,109 @@ def test_foundation_is_seven_classical_planets_only_and_refuses_fake_total():
             + row.ojayugma_bala_virupas
             + row.kendradi_bala_virupas
             + row.drekkana_bala_virupas
+        )
+
+
+def test_complete_sthana_uses_astai_standard_saptavargaja_and_excludes_naisargika():
+    (
+        planet_longitudes,
+        planet_sign_indexes,
+        planet_sign_degrees,
+        navamsa_sign_indexes,
+    ) = _foundation_inputs()
+    positions_by_planet = _synthetic_saptavarga_positions(
+        planet_sign_indexes, planet_sign_degrees
+    )
+
+    result = calculate_shadbala_foundation(
+        ascendant_sign_index=0,
+        planet_longitudes=planet_longitudes,
+        planet_sign_indexes=planet_sign_indexes,
+        planet_sign_degrees=planet_sign_degrees,
+        navamsa_sign_indexes=navamsa_sign_indexes,
+        saptavarga_positions_by_planet=positions_by_planet,
+    )
+
+    assert result.aggregation_status == (
+        "complete_sthana_bala_other_shadbala_components_pending"
+    )
+    assert result.saptavargaja_profile == ASTAI_STANDARD_SAPTAVARGAJA_PROFILE
+
+    for row in result.rows:
+        direct = calculate_saptavargaja_bala(
+            row.planet,
+            positions_by_planet[row.planet],
+            planet_sign_indexes,
+            ASTAI_STANDARD_SAPTAVARGAJA_PROFILE,
+        )
+        assert row.saptavargaja_bala_virupas == pytest.approx(direct.total_virupas)
+        assert row.sthana_bala_total_virupas == pytest.approx(
+            row.sthana_known_subtotal_virupas + row.saptavargaja_bala_virupas
+        )
+        assert row.sthana_bala_total_virupas != pytest.approx(
+            row.sthana_known_subtotal_virupas
+            + row.saptavargaja_bala_virupas
+            + row.naisargika_bala_virupas
+        )
+
+
+def test_complete_sthana_allows_explicit_modern_profile_override():
+    (
+        planet_longitudes,
+        planet_sign_indexes,
+        planet_sign_degrees,
+        navamsa_sign_indexes,
+    ) = _foundation_inputs()
+    positions_by_planet = _synthetic_saptavarga_positions(
+        planet_sign_indexes, planet_sign_degrees
+    )
+
+    standard = calculate_shadbala_foundation(
+        0,
+        planet_longitudes,
+        planet_sign_indexes,
+        planet_sign_degrees,
+        navamsa_sign_indexes,
+        positions_by_planet,
+    )
+    modern = calculate_shadbala_foundation(
+        0,
+        planet_longitudes,
+        planet_sign_indexes,
+        planet_sign_degrees,
+        navamsa_sign_indexes,
+        positions_by_planet,
+        saptavargaja_profile="modern_panchadha_d1_mt_v1",
+    )
+
+    assert modern.saptavargaja_profile == "modern_panchadha_d1_mt_v1"
+    assert any(
+        standard_row.sthana_bala_total_virupas
+        != pytest.approx(modern_row.sthana_bala_total_virupas)
+        for standard_row, modern_row in zip(standard.rows, modern.rows)
+    )
+
+
+def test_complete_sthana_requires_all_seven_planet_saptavarga_rows():
+    (
+        planet_longitudes,
+        planet_sign_indexes,
+        planet_sign_degrees,
+        navamsa_sign_indexes,
+    ) = _foundation_inputs()
+    positions_by_planet = _synthetic_saptavarga_positions(
+        planet_sign_indexes, planet_sign_degrees
+    )
+    positions_by_planet.pop("Saturn")
+
+    with pytest.raises(ValueError, match="Saturn"):
+        calculate_shadbala_foundation(
+            0,
+            planet_longitudes,
+            planet_sign_indexes,
+            planet_sign_degrees,
+            navamsa_sign_indexes,
+            positions_by_planet,
         )
 
 

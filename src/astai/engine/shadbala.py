@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Mapping
 
-CLASSICAL_PLANETS = ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn")
+from astai.engine.saptavargaja import (
+    CLASSICAL_PLANETS,
+    RELATIONSHIP_METHODOLOGY,
+    calculate_saptavargaja_bala,
+)
 
 # Deep debilitation points in the sidereal zodiac, Aries = 0 degrees.
 # Deep exaltation is exactly 180 degrees opposite.
@@ -43,6 +48,7 @@ DREKKANA_TARGET = {
 }
 
 FOUNDATION_METHODOLOGY = "bphs_shadbala_foundation_v1"
+ASTAI_STANDARD_SAPTAVARGAJA_PROFILE = "bphs_textual_all_vargas_v1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +70,8 @@ class ShadbalaFoundation:
     unit: str
     aggregation_status: str
     rows: tuple[ShadbalaFoundationRow, ...]
+    saptavargaja_profile: str | None = None
+    saptavargaja_relationship_methodology: str | None = None
 
 
 def _validate_planet(planet: str) -> None:
@@ -139,21 +147,40 @@ def calculate_naisargika_bala(planet: str) -> float:
 
 def calculate_shadbala_foundation(
     ascendant_sign_index: int,
-    planet_longitudes: dict[str, float],
-    planet_sign_indexes: dict[str, int],
-    planet_sign_degrees: dict[str, float],
-    navamsa_sign_indexes: dict[str, int],
+    planet_longitudes: Mapping[str, float],
+    planet_sign_indexes: Mapping[str, int],
+    planet_sign_degrees: Mapping[str, float],
+    navamsa_sign_indexes: Mapping[str, int],
+    saptavarga_positions_by_planet: Mapping[
+        str, Mapping[str, tuple[int, float]]
+    ] | None = None,
+    saptavargaja_profile: str = ASTAI_STANDARD_SAPTAVARGAJA_PROFILE,
 ) -> ShadbalaFoundation:
-    """Compute only the frozen v0.8 Shadbala foundation components.
+    """Compute the frozen v0.8 Shadbala foundation.
 
-    Saptavargaja Bala is intentionally withheld because source/working traditions
-    disagree on both dignity scores and some varga/relationship conventions.
-    Therefore no complete Sthana Bala or aggregate Shadbala is emitted here.
+    Without Saptavarga positions the function preserves the earlier partial
+    foundation behavior and refuses to emit complete Sthana Bala. When all
+    seven planets receive D1/D2/D3/D7/D9/D12/D30 positions, Saptavargaja is
+    calculated under the explicit profile and complete Sthana Bala is emitted.
+
+    Naisargika Bala is intentionally *not* part of Sthana Bala; it remains a
+    separate Shadbala component.
     """
 
     ascendant_sign_index = int(ascendant_sign_index)
     if not 0 <= ascendant_sign_index <= 11:
         raise ValueError("Ascendant sign index must be between 0 and 11.")
+
+    if saptavarga_positions_by_planet is not None:
+        missing_planets = [
+            planet
+            for planet in CLASSICAL_PLANETS
+            if planet not in saptavarga_positions_by_planet
+        ]
+        if missing_planets:
+            raise ValueError(
+                "Missing Saptavargaja positions for: " + ", ".join(missing_planets)
+            )
 
     rows: list[ShadbalaFoundationRow] = []
     for planet in CLASSICAL_PLANETS:
@@ -172,6 +199,18 @@ def calculate_shadbala_foundation(
         drekkana = calculate_drekkana_bala(planet, sign_degree)
         known_subtotal = uccha + ojayugma + kendradi + drekkana
 
+        saptavargaja = None
+        sthana_total = None
+        if saptavarga_positions_by_planet is not None:
+            saptavargaja_result = calculate_saptavargaja_bala(
+                planet=planet,
+                varga_positions=saptavarga_positions_by_planet[planet],
+                d1_planet_sign_indexes=planet_sign_indexes,
+                profile=saptavargaja_profile,
+            )
+            saptavargaja = saptavargaja_result.total_virupas
+            sthana_total = known_subtotal + saptavargaja
+
         rows.append(
             ShadbalaFoundationRow(
                 planet=planet,
@@ -181,12 +220,26 @@ def calculate_shadbala_foundation(
                 drekkana_bala_virupas=drekkana,
                 sthana_known_subtotal_virupas=known_subtotal,
                 naisargika_bala_virupas=calculate_naisargika_bala(planet),
+                saptavargaja_bala_virupas=saptavargaja,
+                sthana_bala_total_virupas=sthana_total,
             )
+        )
+
+    if saptavarga_positions_by_planet is None:
+        return ShadbalaFoundation(
+            methodology=FOUNDATION_METHODOLOGY,
+            unit="virupa",
+            aggregation_status=(
+                "partial_saptavargaja_pending_no_sthana_or_shadbala_total"
+            ),
+            rows=tuple(rows),
         )
 
     return ShadbalaFoundation(
         methodology=FOUNDATION_METHODOLOGY,
         unit="virupa",
-        aggregation_status="partial_saptavargaja_pending_no_sthana_or_shadbala_total",
+        aggregation_status="complete_sthana_bala_other_shadbala_components_pending",
         rows=tuple(rows),
+        saptavargaja_profile=saptavargaja_profile,
+        saptavargaja_relationship_methodology=RELATIONSHIP_METHODOLOGY,
     )
