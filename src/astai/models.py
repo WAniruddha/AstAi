@@ -260,6 +260,11 @@ class ShadbalaPlanetStrength(BaseModel):
     drekkana_bala_virupas: float
     sthana_bala_total_virupas: float
     naisargika_bala_virupas: float
+    dig_bala_virupas: float
+    dig_bala_weakest_house: int
+    dig_bala_strongest_house: int
+    dig_bala_weakest_point_longitude_sidereal: float
+    dig_bala_angular_distance_degrees: float
 
 
 class ShadbalaFoundation(BaseModel):
@@ -269,6 +274,8 @@ class ShadbalaFoundation(BaseModel):
     saptavargaja_profile: str
     saptavargaja_relationship_methodology: str
     source_varga_profile: VargaProfile
+    dig_bala_methodology: str
+    dig_bala_zero_point_source: str
     rows: list[ShadbalaPlanetStrength]
 
 

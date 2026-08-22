@@ -24,17 +24,28 @@ def _birth_data(varga_profile: str = "parashara_traditional") -> BirthData:
     )
 
 
-def test_chart_response_exposes_complete_sthana_bala_with_provenance() -> None:
+def test_chart_response_exposes_sthana_dig_and_naisargika_with_provenance() -> None:
     chart = calculate_chart(_birth_data())
     shadbala = chart.shadbala
 
-    assert shadbala.aggregation_status == "complete_sthana_bala_other_shadbala_components_pending"
+    assert shadbala.aggregation_status == (
+        "complete_sthana_dig_naisargika_other_shadbala_components_pending"
+    )
     assert shadbala.saptavargaja_profile == "bphs_textual_all_vargas_v1"
     assert shadbala.saptavargaja_relationship_methodology == (
         "d1_panchadha_maitri_reused_across_saptavargas_v1"
     )
     assert shadbala.source_varga_profile == "parashara_traditional"
+    assert shadbala.dig_bala_methodology == "bphs_dig_bala_bhava_madhya_v1"
+    assert shadbala.dig_bala_zero_point_source == (
+        "sidereal_sripati_bhava_madhya_quadrants"
+    )
     assert [row.planet for row in shadbala.rows] == CLASSICAL_PLANETS
+
+    bhava_madhyas = {
+        house.house: house.madhya_longitude_sidereal
+        for house in chart.bhava_chalit.houses
+    }
 
     for row in shadbala.rows:
         expected_sthana = (
@@ -50,8 +61,26 @@ def test_chart_response_exposes_complete_sthana_bala_with_provenance() -> None:
             expected_sthana + row.naisargika_bala_virupas
         )
 
+        assert 0.0 <= row.dig_bala_virupas <= 60.0
+        assert row.dig_bala_virupas == pytest.approx(
+            row.dig_bala_angular_distance_degrees / 3.0
+        )
+        assert row.dig_bala_weakest_house in {1, 4, 7, 10}
+        assert row.dig_bala_strongest_house in {1, 4, 7, 10}
+        assert row.dig_bala_weakest_point_longitude_sidereal == pytest.approx(
+            bhava_madhyas[row.dig_bala_weakest_house]
+        )
+
     assert any(
         item.code == "SHADBALA_STHANA" and item.status == "METHODOLOGY_DEPENDENT"
+        for item in chart.audit
+    )
+    assert any(
+        item.code == "SHADBALA_DIG" and item.status == "METHODOLOGY_DEPENDENT"
+        for item in chart.audit
+    )
+    assert any(
+        item.code == "SHADBALA_PARTIAL" and item.status == "NOT_COMPUTED"
         for item in chart.audit
     )
 
@@ -64,4 +93,7 @@ def test_selected_d7_varga_profile_is_declared_in_shadbala_provenance() -> None:
     chart = calculate_chart(_birth_data("astrosage_reference_compat_v1"))
     assert chart.shadbala.source_varga_profile == "astrosage_reference_compat_v1"
     assert chart.metadata.varga_profile == "astrosage_reference_compat_v1"
+    assert chart.shadbala.dig_bala_zero_point_source == (
+        "sidereal_sripati_bhava_madhya_quadrants"
+    )
     assert any(item.code == "VARGA_COMPATIBILITY_PROFILE" for item in chart.audit)

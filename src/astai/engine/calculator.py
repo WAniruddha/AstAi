@@ -10,6 +10,7 @@ from astai.engine.ashtakavarga import calculate_raw_ashtakavarga
 from astai.engine.ashtakavarga_reductions import calculate_ashtakavarga_reductions
 from astai.engine.astronomy import calculate_astronomy
 from astai.engine.dasha import calculate_vimshottari
+from astai.engine.dig_bala import calculate_dig_bala_all
 from astai.engine.houses import calculate_sripati_bhava
 from astai.engine.panchanga import calculate_panchanga
 from astai.engine.shadbala import calculate_shadbala_foundation
@@ -117,7 +118,13 @@ def _ashtakavarga_model(ascendant, planets) -> Ashtakavarga:
     )
 
 
-def _shadbala_model(ascendant, planets, shodashavarga, source_varga_profile: str) -> ShadbalaFoundation:
+def _shadbala_model(
+    ascendant,
+    planets,
+    shodashavarga,
+    bhava_chalit,
+    source_varga_profile: str,
+) -> ShadbalaFoundation:
     classical_by_name = {
         planet.body: planet for planet in planets if planet.body in CLASSICAL_PLANETS
     }
@@ -172,10 +179,19 @@ def _shadbala_model(ascendant, planets, shodashavarga, source_varga_profile: str
     if result.saptavargaja_profile is None or result.saptavargaja_relationship_methodology is None:
         raise RuntimeError("Complete Shadbala foundation unexpectedly returned partial Sthana Bala metadata.")
 
+    bhava_madhyas = {
+        house.house: house.madhya_longitude_sidereal
+        for house in bhava_chalit.houses
+        if house.house in {1, 4, 7, 10}
+    }
+    dig = calculate_dig_bala_all(planet_longitudes, bhava_madhyas)
+    dig_by_planet = {row.planet: row for row in dig.rows}
+
     rows: list[ShadbalaPlanetStrength] = []
     for row in result.rows:
         if row.saptavargaja_bala_virupas is None or row.sthana_bala_total_virupas is None:
             raise RuntimeError(f"Complete Sthana Bala unexpectedly missing for {row.planet}.")
+        dig_row = dig_by_planet[row.planet]
         rows.append(
             ShadbalaPlanetStrength(
                 planet=row.planet,
@@ -186,16 +202,23 @@ def _shadbala_model(ascendant, planets, shodashavarga, source_varga_profile: str
                 drekkana_bala_virupas=row.drekkana_bala_virupas,
                 sthana_bala_total_virupas=row.sthana_bala_total_virupas,
                 naisargika_bala_virupas=row.naisargika_bala_virupas,
+                dig_bala_virupas=dig_row.dig_bala_virupas,
+                dig_bala_weakest_house=dig_row.weakest_house,
+                dig_bala_strongest_house=dig_row.strongest_house,
+                dig_bala_weakest_point_longitude_sidereal=dig_row.weakest_point_longitude_sidereal,
+                dig_bala_angular_distance_degrees=dig_row.angular_distance_degrees,
             )
         )
 
     return ShadbalaFoundation(
         methodology=result.methodology,
         unit="virupa",
-        aggregation_status=result.aggregation_status,
+        aggregation_status="complete_sthana_dig_naisargika_other_shadbala_components_pending",
         saptavargaja_profile=result.saptavargaja_profile,
         saptavargaja_relationship_methodology=result.saptavargaja_relationship_methodology,
         source_varga_profile=source_varga_profile,
+        dig_bala_methodology=dig.methodology,
+        dig_bala_zero_point_source=dig.zero_point_source,
         rows=rows,
     )
 
@@ -228,7 +251,11 @@ def calculate_chart(data: BirthData) -> ChartResponse:
     )
     ashtakavarga = _ashtakavarga_model(astronomy["ascendant"], planets)
     shadbala = _shadbala_model(
-        astronomy["ascendant"], planets, shodashavarga, data.varga_profile
+        astronomy["ascendant"],
+        planets,
+        shodashavarga,
+        bhava_chalit,
+        data.varga_profile,
     )
 
     audit = [
@@ -299,8 +326,24 @@ def calculate_chart(data: BirthData) -> ChartResponse:
                 "v0.8 computes complete Sthana Bala for Sun through Saturn as Uchcha + Saptavargaja + "
                 "Ojayugma + Kendradi + Drekkana. Saptavargaja uses the explicit "
                 f"{shadbala.saptavargaja_profile} profile with {shadbala.saptavargaja_relationship_methodology}; "
-                f"its seven divisional inputs come from the chart's {data.varga_profile} Varga profile. "
-                "Naisargika Bala is reported separately and no aggregate Shadbala total is emitted yet."
+                f"its seven divisional inputs come from the chart's {data.varga_profile} Varga profile."
+            ),
+        ),
+        AuditItem(
+            code="SHADBALA_DIG",
+            status="METHODOLOGY_DEPENDENT",
+            message=(
+                f"Dig Bala uses {shadbala.dig_bala_methodology} with zero points from "
+                f"{shadbala.dig_bala_zero_point_source}. The 1st/4th/7th/10th sidereal Sripati "
+                "Bhava Madhyas are used as directional angular points; whole-sign centers are not substituted."
+            ),
+        ),
+        AuditItem(
+            code="SHADBALA_PARTIAL",
+            status="NOT_COMPUTED",
+            message=(
+                "Sthana Bala, Dig Bala and Naisargika Bala are available. Kala, Chesta and Drik Bala, "
+                "aggregate Shadbala and required-strength ratios remain intentionally withheld."
             ),
         ),
     ]
