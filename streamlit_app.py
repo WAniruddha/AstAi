@@ -390,12 +390,13 @@ def _render_ashtakavarga_panel() -> None:
         return
 
     av = current_chart.ashtakavarga
+    reductions = av.reductions
     st.caption(
-        f"Methodology: {av.methodology} · status: {av.reduction_status}. "
-        "These are raw classical scores; Trikona Shodhana, Ekadhipatya Shodhana and Shodhya Pinda are not applied."
+        f"Raw methodology: {av.methodology} · status: {av.reduction_status}. "
+        "The raw BAV/SAV layer is preserved exactly; reductions are shown as separate audited stages."
     )
 
-    st.subheader("Sarvashtakavarga (SAV)")
+    st.subheader("Sarvashtakavarga (SAV) · raw")
     st.dataframe(
         [
             {"Sign": sign, "SAV points": points}
@@ -404,7 +405,10 @@ def _render_ashtakavarga_panel() -> None:
         use_container_width=True,
         hide_index=True,
     )
-    st.metric("SAV total", av.sarva_total)
+    st.metric("Raw SAV total", av.sarva_total)
+    st.caption(
+        "AstAi does not invent a reduced SAV here. Trikona and Ekadhipatya are retained as planetary BAV reduction stages."
+    )
 
     planets = [bav.planet for bav in av.bhinna]
     if st.session_state.get("selected_bav_planet") not in planets:
@@ -416,38 +420,141 @@ def _render_ashtakavarga_panel() -> None:
     )
     bav = next(item for item in av.bhinna if item.planet == selected_planet)
 
-    st.subheader(f"{selected_planet} Bhinnashtakavarga (BAV)")
+    reduced = None
+    if reductions is not None:
+        reduced = next(
+            item for item in reductions.bhinna if item.planet == selected_planet
+        )
+
+    stage_options = ["Raw"]
+    if reduced is not None:
+        stage_options.extend(["After Trikona", "After Ekadhipatya"])
+    if st.session_state.get("selected_bav_stage") not in stage_options:
+        st.session_state["selected_bav_stage"] = "Raw"
+    selected_stage = st.selectbox(
+        "Reduction stage",
+        stage_options,
+        key="selected_bav_stage",
+    )
+
+    if selected_stage == "After Trikona" and reduced is not None:
+        stage_values = reduced.trikona_points_by_sign
+        stage_method = "Trikona Shodhana"
+    elif selected_stage == "After Ekadhipatya" and reduced is not None:
+        stage_values = reduced.ekadhipatya_points_by_sign
+        stage_method = "Ekadhipatya Shodhana"
+    else:
+        stage_values = bav.points_by_sign
+        stage_method = "Raw / unreduced"
+
+    st.subheader(f"{selected_planet} BAV · {stage_method}")
     st.dataframe(
         [
-            {"Sign": sign, "BAV points": points}
-            for sign, points in zip(av.sign_order, bav.points_by_sign)
+            {"Sign": sign, "Points": points}
+            for sign, points in zip(av.sign_order, stage_values)
         ],
         use_container_width=True,
         hide_index=True,
     )
-    st.metric(f"{selected_planet} BAV total", bav.total)
+    st.metric("Stage total", sum(stage_values))
 
-    st.subheader("Prastara contribution matrix")
-    st.caption(av.point_semantics)
+    if reductions is not None:
+        st.caption(
+            f"Reduction methodology: {reductions.methodology}. {reductions.occupancy_semantics}"
+        )
+
+    with st.expander("Raw Prastara contribution matrix"):
+        st.caption(av.point_semantics)
+        st.dataframe(
+            [
+                {
+                    "Contributor": row.contributor,
+                    **{
+                        sign: point
+                        for sign, point in zip(av.sign_order, row.points_by_sign)
+                    },
+                    "Total": row.total,
+                }
+                for row in bav.prastara
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.caption(
+            "Prastara belongs to the raw BAV layer. Classical contributors are Sun through Saturn plus Ascendant/Lagna."
+        )
+
+    if reductions is None:
+        st.info("Reduction data is unavailable in this chart payload.")
+        return
+
+    st.subheader("Shodhya Pinda")
+    profile_labels = {
+        "AstAi standard · BPHS parenthetical": "bphs_parenthetical_v1",
+        "Legacy/vendor compatibility · Virgo=5": "legacy_virgo5_v1",
+    }
+    available_profiles = {profile.profile: profile for profile in reductions.pinda_profiles}
+    selectable_labels = [
+        label for label, profile_id in profile_labels.items() if profile_id in available_profiles
+    ]
+    selected_profile_label = st.selectbox(
+        "Pinda multiplier profile",
+        selectable_labels,
+        key="selected_pinda_profile_label",
+    )
+    profile_id = profile_labels[selected_profile_label]
+    profile = available_profiles[profile_id]
+
+    if profile_id == reductions.standard_pinda_profile:
+        st.caption(
+            f"Profile: {profile_id} · AstAi Standard. Multiplier choice is explicit because source traditions differ."
+        )
+    else:
+        st.warning(
+            f"Profile: {profile_id}. This is a compatibility/reference profile, not AstAi Standard."
+        )
+
     st.dataframe(
         [
             {
-                "Contributor": row.contributor,
-                **{
-                    sign: point
-                    for sign, point in zip(av.sign_order, row.points_by_sign)
-                },
-                "Total": row.total,
+                "Planet": result.planet,
+                "Rasi Pinda": result.rasi_pinda,
+                "Graha Pinda": result.graha_pinda,
+                "Shodhya Pinda": result.shodhya_pinda,
             }
-            for row in bav.prastara
+            for result in profile.results
         ],
         use_container_width=True,
         hide_index=True,
     )
-    st.caption(
-        "Classical contributors are Sun through Saturn plus Ascendant/Lagna. "
-        "Rahu, Ketu, Uranus, Neptune and Pluto are intentionally excluded from raw classical Ashtakavarga."
+
+    selected_pinda = next(
+        result for result in profile.results if result.planet == selected_planet
     )
+    p1, p2, p3 = st.columns(3)
+    p1.metric(f"{selected_planet} Rasi Pinda", selected_pinda.rasi_pinda)
+    p2.metric(f"{selected_planet} Graha Pinda", selected_pinda.graha_pinda)
+    p3.metric(f"{selected_planet} Shodhya Pinda", selected_pinda.shodhya_pinda)
+
+    with st.expander("Pinda multiplier tables"):
+        st.dataframe(
+            [
+                {"Sign": sign, "Rasi multiplier": multiplier}
+                for sign, multiplier in zip(
+                    av.sign_order, profile.rasi_multipliers, strict=True
+                )
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.dataframe(
+            [
+                {"Planet": planet, "Graha multiplier": multiplier}
+                for planet, multiplier in profile.graha_multipliers.items()
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
 
 
 with ashtakavarga_tab:

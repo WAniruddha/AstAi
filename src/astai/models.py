@@ -12,7 +12,7 @@ BhavaMethod = Literal["sripati"]
 DashaLevel = Literal["MD", "AD", "PD", "SD", "PRANA"]
 AuditStatus = Literal[
     "COMPUTED", "UNIT_TESTED", "REFERENCE_MATCHED", "CROSS_VERIFIED",
-    "DERIVED", "WARNING", "NOT_COMPUTED",
+    "DERIVED", "METHODOLOGY_DEPENDENT", "WARNING", "NOT_COMPUTED",
 ]
 
 
@@ -211,6 +211,35 @@ class Bhinnashtakavarga(BaseModel):
     prastara: list[AshtakavargaContribution]
 
 
+class ReducedBhinnashtakavarga(BaseModel):
+    planet: str
+    raw_points_by_sign: list[int]
+    trikona_points_by_sign: list[int]
+    ekadhipatya_points_by_sign: list[int]
+
+
+class AshtakavargaPindaResult(BaseModel):
+    planet: str
+    rasi_pinda: int
+    graha_pinda: int
+    shodhya_pinda: int
+
+
+class AshtakavargaPindaProfile(BaseModel):
+    profile: str
+    rasi_multipliers: list[int]
+    graha_multipliers: dict[str, int]
+    results: list[AshtakavargaPindaResult]
+
+
+class AshtakavargaReductions(BaseModel):
+    methodology: str
+    occupancy_semantics: str
+    standard_pinda_profile: str
+    bhinna: list[ReducedBhinnashtakavarga]
+    pinda_profiles: list[AshtakavargaPindaProfile]
+
+
 class Ashtakavarga(BaseModel):
     methodology: str = "classical_raw_ashtakavarga_v1"
     sign_order: list[str]
@@ -219,6 +248,7 @@ class Ashtakavarga(BaseModel):
     bhinna: list[Bhinnashtakavarga]
     sarva_points_by_sign: list[int]
     sarva_total: int
+    reductions: AshtakavargaReductions | None = None
 
 
 class CalculationMetadata(BaseModel):
