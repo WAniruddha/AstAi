@@ -251,6 +251,34 @@ class Ashtakavarga(BaseModel):
     reductions: AshtakavargaReductions | None = None
 
 
+class ShadbalaPlanetStrength(BaseModel):
+    planet: str
+    uccha_bala_virupas: float
+    saptavargaja_bala_virupas: float
+    ojayugma_bala_virupas: float
+    kendradi_bala_virupas: float
+    drekkana_bala_virupas: float
+    sthana_bala_total_virupas: float
+    naisargika_bala_virupas: float
+    dig_bala_virupas: float
+    dig_bala_weakest_house: int
+    dig_bala_strongest_house: int
+    dig_bala_weakest_point_longitude_sidereal: float
+    dig_bala_angular_distance_degrees: float
+
+
+class ShadbalaFoundation(BaseModel):
+    methodology: str
+    unit: Literal["virupa"] = "virupa"
+    aggregation_status: str
+    saptavargaja_profile: str
+    saptavargaja_relationship_methodology: str
+    source_varga_profile: VargaProfile
+    dig_bala_methodology: str
+    dig_bala_zero_point_source: str
+    rows: list[ShadbalaPlanetStrength]
+
+
 class CalculationMetadata(BaseModel):
     calculation_fingerprint: str
     julian_day_ut: float
@@ -294,4 +322,5 @@ class ChartResponse(BaseModel):
     shodashavarga: list[VargaChart]
     vimshottari: VimshottariDasha
     ashtakavarga: Ashtakavarga
+    shadbala: ShadbalaFoundation
     audit: list[AuditItem]
