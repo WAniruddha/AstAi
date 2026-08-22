@@ -181,3 +181,7 @@ A valid v0.8 Sthana payload requires that:
 - Naisargika Bala is not included in Sthana Bala;
 - the Saptavargaja and source Varga profiles are recorded;
 - no aggregate Shadbala or required-strength ratio is emitted while Dig/Kala/Chesta/Drik remain pending.
+
+## Current test gate
+
+The typed ChartResponse integration must pass locally before the Streamlit Shadbala inspection tab is added. This keeps the UI dependent only on a payload that has already passed focused and full regression tests.
