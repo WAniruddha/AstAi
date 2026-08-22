@@ -30,7 +30,7 @@ Natural friendship is combined with temporary friendship from the D1 planetary a
 
 Temporary friends are planets in the 2nd, 3rd, 4th, 10th, 11th or 12th from the target planet in D1; the remaining relative houses are temporary enemies.
 
-The resulting D1 Panchadha-Maitri relationship matrix is reused for all seven Vargas. This follows the working convention described in R. Santhanam's BPHS notes and V. P. Jain's Shadbala/Bhavabala teaching material rather than recomputing temporary friendship separately inside every divisional chart.
+The resulting D1 Panchadha-Maitri relationship matrix is reused for all seven Vargas. This follows BPHS computational notes that explicitly say compound relationships are to be taken from the Rashi chart rather than recalculated in the concerned divisional chart. It also reproduces a well-known B. V. Raman worked Saptavargaja table under the modern score profile.
 
 ## Profile 1 — `bphs_textual_all_vargas_v1`
 
@@ -46,9 +46,14 @@ Scores in virupas:
 | Enemy | 4 |
 | Great enemy | 2 |
 
-This is the literal BPHS scoring sequence given in the Saptavargaja verses. The same dignity sequence is applied across all seven Vargas in this profile because the verse states that the values similarly occur in the other six divisional occupations.
+This is the textual BPHS scoring sequence. The verses state that the same values occur for the other six divisional occupations.
 
-This is intentionally labelled a **literal textual reading**, not a claim that every working tradition applies Moolatrikona outside D1.
+Moolatrikona handling is deliberately split by chart type:
+
+- **D1:** use the planet's BPHS Moolatrikona sign **and degree range**.
+- **D2/D3/D7/D9/D12/D30:** use **Moolatrikona sign occupation only**. The normalized degree shown inside a higher Varga is not treated as a natal longitude for applying the D1 degree range.
+
+This preserves the literal all-seven-Varga reading without inventing pseudo-longitude precision inside higher divisions.
 
 ## Profile 2 — `modern_panchadha_d1_mt_v1`
 
@@ -64,11 +69,11 @@ Scores in virupas:
 | Enemy | 3.75 |
 | Great enemy | 1.875 |
 
-This profile follows the widespread Panchadha-Maitri working table found in Shadbala teaching material and software-compatible examples. Moolatrikona is applied only in D1; in the other six Vargas the placement is evaluated as own/friend/neutral/enemy according to the declared D1 relationship matrix.
+This profile follows the widespread modern Panchadha-Maitri working table. Moolatrikona is applied only in D1; in the other six Vargas the placement is evaluated as own/friend/neutral/enemy according to the declared D1 relationship matrix.
 
-## Moolatrikona ranges
+## D1 Moolatrikona ranges
 
-The BPHS degree ranges frozen for this slice are:
+The BPHS degree ranges frozen for D1 are:
 
 | Planet | Sign | Range |
 | --- | --- | --- |
@@ -87,20 +92,23 @@ Intervals are implemented as half-open `[start, end)` to match AstAi's other exa
 The isolated tests require that:
 
 - both scoring tables are emitted exactly and never silently converted;
+- profile metadata declares its Moolatrikona scope;
 - the textual profile can reach 315 virupas when all seven placements are Moolatrikona under its declared reading;
+- D1 uses exact Moolatrikona degree ranges;
+- higher-Varga Moolatrikona in the textual profile is sign-based, not based on normalized Varga degrees;
 - the modern profile limits Moolatrikona to D1;
 - Panchadha-Maitri is derived from D1 and reused in the other Vargas;
-- all seven BPHS Moolatrikona degree ranges are boundary-tested;
 - all seven required Vargas must be supplied;
 - the D1 placement must agree with the D1 relationship chart;
 - Rahu, Ketu, Uranus, Neptune and Pluto are rejected.
 
 ## References used to freeze this slice
 
-- BPHS Saptavargaja verses and dignity weights: https://vedicspace.com/bphs/28
-- BPHS Saptavargaja translation listing the seven Vargas: https://vedicpupil.in/library/brihat-parashara-hora-shastra-book-by-parashara/spashtabal-ch27/4
-- BPHS Moolatrikona ranges: https://vedicpupil.in/library/brihat-parashara-hora-shastra-book-by-parashara/graha-gunas-planetary-qualities-ch3/53
-- Modern Panchadha-Maitri/Shadbala working table and D1-only relationship matrix: https://pdfcoffee.com/shadbala-and-bhavabala-calculationpdf-pdf-free.html
+- BPHS Saptavargaja verse/translation and textual dignity weights: https://vedicpupil.in/library/brihat-parashara-hora-shastra-book-by-parashara/spashtabal-ch27/4
+- BPHS chapter 27 computational notes: https://storage.yandexcloud.net/j108/library/hr6fkynz/Maharishi_Parashara_-_Brihat_Parasara_Hora_Sastra_%28Vol._1%29.pdf
+- Higher-Varga Moolatrikona sign-only working convention: https://saravali.github.io/astrology/bala_sthana.html
+- D1-only modern working table example: https://www.scribd.com/document/478806528/Shadbala-Performa-pdf
+- D1 relationship reuse reconstruction against B. V. Raman: https://www.vinayakhora.in/post/tatkalika-maitri-varga-charts/
 
 ## Deliberately still withheld
 
@@ -109,4 +117,4 @@ The isolated tests require that:
 - complete Sthana Bala;
 - any aggregate Shadbala score or required-strength ratio.
 
-Those steps happen only after the user runs the isolated test slice locally and the full regression suite remains green.
+Those steps happen only after this corrected isolated slice is re-tested locally and the full regression suite remains green.

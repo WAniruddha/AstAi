@@ -42,13 +42,36 @@ def test_score_profiles_are_explicit():
     }
 
 
-def test_bphs_literal_profile_allows_mt_in_all_seven_vargas():
+def test_profile_scope_metadata_is_explicit():
+    assert (
+        SAPTAVARGAJA_PROFILES["bphs_textual_all_vargas_v1"].moolatrikona_scope
+        == "d1_degree_higher_vargas_sign"
+    )
+    assert (
+        SAPTAVARGAJA_PROFILES["modern_panchadha_d1_mt_v1"].moolatrikona_scope
+        == "d1_only_degree"
+    )
+
+
+def test_bphs_textual_profile_allows_mt_in_all_seven_vargas():
     positions = {code: (4, 10.0) for code in SAPTAVARGA_CODES}
     result = calculate_saptavargaja_bala(
         "Sun", positions, BASE_SIGNS, "bphs_textual_all_vargas_v1"
     )
     assert result.total_virupas == pytest.approx(315.0)
     assert {row.dignity for row in result.vargas} == {"moolatrikona"}
+
+
+def test_bphs_higher_varga_mt_is_sign_based_not_degree_based():
+    # Sun 25° Leo is outside its D1 MT degree range, so D1 is only own-sign.
+    assert classify_saptavargaja_dignity(
+        "Sun", "D1", 4, 25.0, BASE_SIGNS, "bphs_textual_all_vargas_v1"
+    ) == "own"
+    # In a higher Varga the same normalized degree must not be treated like
+    # natal longitude; Leo sign occupation alone is the textual profile's MT test.
+    assert classify_saptavargaja_dignity(
+        "Sun", "D9", 4, 25.0, BASE_SIGNS, "bphs_textual_all_vargas_v1"
+    ) == "moolatrikona"
 
 
 def test_modern_profile_limits_mt_to_d1():
@@ -93,7 +116,7 @@ def test_d1_compound_relationship_is_reused_in_non_d1_vargas():
         ("Saturn", 10, 10.0, 25.0),
     ],
 )
-def test_bphs_moolatrikona_ranges(planet, sign_index, inside_degree, outside_degree):
+def test_d1_moolatrikona_degree_ranges(planet, sign_index, inside_degree, outside_degree):
     d1 = dict(BASE_SIGNS)
     d1[planet] = sign_index
     assert classify_saptavargaja_dignity(

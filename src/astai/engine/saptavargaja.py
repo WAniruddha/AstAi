@@ -44,9 +44,9 @@ NATURAL_RELATIONSHIPS = {
     },
 }
 
-# BPHS dignity spans. Intervals are half-open [start, end), matching the
-# engine's degree-boundary convention. The Moon's first 3 degrees of Taurus
-# are its exaltation zone; the remaining Taurus span is Moolatrikona.
+# BPHS D1 Moolatrikona degree spans. Intervals are half-open [start, end).
+# For higher Vargas the explicit textual profile uses Moolatrikona sign
+# occupation only, not normalized Varga degrees.
 MOOLATRIKONA_RANGES = {
     "Sun": (4, 0.0, 20.0),
     "Moon": (1, 3.0, 30.0),
@@ -83,7 +83,7 @@ SAPTAVARGAJA_PROFILES = {
             "enemy": 4.0,
             "great_enemy": 2.0,
         },
-        moolatrikona_scope="all_saptavargas_literal_text_reading",
+        moolatrikona_scope="d1_degree_higher_vargas_sign",
     ),
     "modern_panchadha_d1_mt_v1": SaptavargajaProfile(
         profile="modern_panchadha_d1_mt_v1",
@@ -96,7 +96,7 @@ SAPTAVARGAJA_PROFILES = {
             "enemy": 3.75,
             "great_enemy": 1.875,
         },
-        moolatrikona_scope="d1_only",
+        moolatrikona_scope="d1_only_degree",
     ),
 }
 
@@ -188,9 +188,29 @@ def get_compound_relationship(
     return "neutral" if temporary == "friend" else "great_enemy"
 
 
-def _is_moolatrikona(planet: str, sign_index: int, sign_degree: float) -> bool:
+def _is_d1_moolatrikona(planet: str, sign_index: int, sign_degree: float) -> bool:
     mt_sign, start, end = MOOLATRIKONA_RANGES[planet]
     return sign_index == mt_sign and start <= sign_degree < end
+
+
+def _is_moolatrikona_for_profile(
+    planet: str,
+    varga: str,
+    sign_index: int,
+    sign_degree: float,
+    methodology: SaptavargajaProfile,
+) -> bool:
+    if varga == "D1":
+        return _is_d1_moolatrikona(planet, sign_index, sign_degree)
+
+    if methodology.moolatrikona_scope == "d1_only_degree":
+        return False
+
+    # BPHS textual/all-Varga profile: higher divisions are judged by sign
+    # occupation. Do not interpret the normalized Varga degree as a natal
+    # Moolatrikona degree range.
+    mt_sign = MOOLATRIKONA_RANGES[planet][0]
+    return sign_index == mt_sign
 
 
 def classify_saptavargaja_dignity(
@@ -218,8 +238,9 @@ def classify_saptavargaja_dignity(
         raise ValueError(f"Unknown Saptavargaja profile: {profile}") from exc
 
     signs = _validate_d1_signs(d1_planet_sign_indexes)
-    mt_applies = methodology.moolatrikona_scope != "d1_only" or varga == "D1"
-    if mt_applies and _is_moolatrikona(planet, sign_index, sign_degree):
+    if _is_moolatrikona_for_profile(
+        planet, varga, sign_index, sign_degree, methodology
+    ):
         return "moolatrikona"
 
     sign_lord = SIGN_LORDS[sign_index]
