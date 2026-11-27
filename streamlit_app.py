@@ -220,7 +220,6 @@ def _birth_controls() -> None:
         else:
             st.session_state["astai_chart"] = calculated_chart
             st.session_state["astai_chart_request_signature"] = current_signature
-            # Only an actual calculation refreshes the full result area.
             st.rerun()
 
 
@@ -261,6 +260,7 @@ st.caption(
     bhava_tab,
     varga_tab,
     ashtakavarga_tab,
+    shadbala_tab,
     panchanga_tab,
     dasha_tab,
     cusps_tab,
@@ -272,6 +272,7 @@ st.caption(
         "Bhava / Chalit",
         "Shodashavarga",
         "Ashtakavarga",
+        "Shadbala",
         "Panchanga",
         "Vimshottari",
         "Placidus cusps",
@@ -381,6 +382,69 @@ def _render_varga_panel() -> None:
 
 with varga_tab:
     _render_varga_panel()
+
+
+with shadbala_tab:
+    s = chart.shadbala
+    st.warning(
+        "Partial Shadbala inspection only. Sthana Bala, Dig Bala and Naisargika Bala are computed; "
+        "Kala, Chesta and Drik Bala plus the aggregate Shadbala score are intentionally withheld."
+    )
+    st.caption(
+        f"Methodology: {s.methodology} · Saptavargaja profile: {s.saptavargaja_profile} · "
+        f"Relationship method: {s.saptavargaja_relationship_methodology} · "
+        f"Source Varga profile: {s.source_varga_profile}."
+    )
+    st.caption(
+        f"Dig Bala: {s.dig_bala_methodology} · zero-point source: {s.dig_bala_zero_point_source}."
+    )
+    st.subheader("Shadbala · verified components")
+    st.dataframe(
+        [
+            {
+                "Planet": row.planet,
+                "Uchcha": round(row.uccha_bala_virupas, 4),
+                "Saptavargaja": round(row.saptavargaja_bala_virupas, 4),
+                "Ojayugma": round(row.ojayugma_bala_virupas, 4),
+                "Kendradi": round(row.kendradi_bala_virupas, 4),
+                "Drekkana": round(row.drekkana_bala_virupas, 4),
+                "Sthana total": round(row.sthana_bala_total_virupas, 4),
+                "Sthana rupa": round(row.sthana_bala_total_virupas / 60.0, 4),
+                "Dig": round(row.dig_bala_virupas, 4),
+                "Naisargika": round(row.naisargika_bala_virupas, 4),
+            }
+            for row in s.rows
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.caption(
+        "Sthana Bala = Uchcha + Saptavargaja + Ojayugma + Kendradi + Drekkana. "
+        "60 virupas = 1 rupa. Dig Bala and Naisargika Bala are separate Shadbala components and are not added to Sthana Bala."
+    )
+    with st.expander("Dig Bala geometry audit"):
+        st.caption(
+            "Dig Bala = shortest angular separation from the planet-specific weak Sripati Bhava Madhya / 3. "
+            "The opposite directional point is full strength at 60 virupas."
+        )
+        st.dataframe(
+            [
+                {
+                    "Planet": row.planet,
+                    "Weak house": row.dig_bala_weakest_house,
+                    "Strong house": row.dig_bala_strongest_house,
+                    "Weak point °": round(row.dig_bala_weakest_point_longitude_sidereal, 6),
+                    "Angular distance °": round(row.dig_bala_angular_distance_degrees, 6),
+                    "Dig Bala": round(row.dig_bala_virupas, 4),
+                }
+                for row in s.rows
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+    st.info(
+        f"Status: {s.aggregation_status}. No final Shadbala total or strength ratio is displayed at this stage."
+    )
 
 
 @st.fragment
